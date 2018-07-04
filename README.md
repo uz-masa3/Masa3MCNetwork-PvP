@@ -1,0 +1,2 @@
+# Masa3MCNetwork-PvP
+Masa3MCNetworkで使用しているPvPプラグインです。初心者が取り敢えず動けばいいという考えで作ったため雑なとこが目立ちます。
