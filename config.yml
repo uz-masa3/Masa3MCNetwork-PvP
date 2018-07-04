@@ -1,0 +1,49 @@
+Arenas: 2
+Arena1:
+  Type: CTW
+  seconds: 300
+  minPlayer: 2
+  defaultKit: soldier
+  Red:
+    W: world
+    X: 0
+    Y: 0
+    Z: 0
+  Blue:
+    W: world
+    X: 0
+    Y: 0
+    Z: 0
+  object:
+    red:
+      x: 0
+      y: 0
+      z: 0
+    blue:
+      x: 0
+      y: 0
+      z: 0
+  put:
+    red:
+      x: 0
+      y: 0
+      z: 0
+    blue:
+      x: 0
+      y: 0
+      z: 0
+Arena2:
+  Type: TDM
+  seconds: 300
+  minPlayer: 2
+  defaultKit: soldier
+  Red:
+    W: world
+    X: 0
+    Y: 0
+    Z: 0
+  Blue:
+    W: world
+    X: 0
+    Y: 0
+    Z: 0

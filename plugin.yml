@@ -1,0 +1,41 @@
+﻿name: masa3MC
+version: 1.4.5-2018.07.04
+main: net.masa3mc.pvp2.Main
+author: uz_masa3
+commands:
+   kitmenu:
+      description: open kit menu.
+      permission: masa3MC.command.kitmenu
+   setkit:
+      description: save kit.
+      permission: masa3MC.command.setkit
+   loadkit:
+      description: load kit.
+      permission: masa3MC.command.loadkit
+   gamestart:
+      description: start game.
+      permission: masa3MC.command.gamestart
+   gameend:
+      description: end game.
+      permission: masa3MC.command.gameend
+   point:
+      description: show user point.
+      permission: masa3MC.command.point
+   setting:
+      description: Setings
+      permission: masa3MC.command.setting
+permissions:
+  masa3MC.command.kitmenu:
+    default: op
+  masa3MC.command.setkit:
+    default: op
+  masa3MC.command.loadkit:
+    default: op
+  masa3MC.command.gamestart:
+    default: op
+  masa3MC.command.gameend:
+    default: op
+  masa3MC.command.point:
+    default: true
+  masa3MC.command.setting:
+    default: op
