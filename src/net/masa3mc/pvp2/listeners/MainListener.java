@@ -157,10 +157,10 @@ public class MainListener implements Listener {
 		if (!GameManager.ingame) {
 			SidebarUtils.SidebarUnregist();
 		}
-
+		GameManager.kitInventory(player);
 		new BukkitRunnable() {
 			public void run() {
-				GameManager.addPlayer(player);
+				KitUtils.kitMenu(player);
 			}
 		}.runTaskLater(main, 20);
 	}
@@ -289,6 +289,9 @@ public class MainListener implements Listener {
 						if (!GameManager.gamenow.contains(p)) {
 							GameManager.addGamePlayer(p);
 						}
+					} else {
+						if (!GameManager.entried.contains(p))
+							GameManager.addPlayer(p);
 					}
 				} else {
 					p.sendMessage(c("&6" + kit + "&cは所持していません"));

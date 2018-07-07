@@ -81,14 +81,11 @@ public class GameManager {
 	// サーバー参加時に呼び出される
 	@SuppressWarnings("deprecation")
 	public static void addPlayer(Player player) {
-		entried.add(player);
+		if (!entried.contains(player))
+			entried.add(player);
+
 		// Inventory消去とか
-		player.getInventory().setHelmet(new ItemStack(Material.AIR));
-		player.getInventory().setChestplate(new ItemStack(Material.AIR));
-		player.getInventory().setLeggings(new ItemStack(Material.AIR));
-		player.getInventory().setBoots(new ItemStack(Material.AIR));
-		player.getInventory().clear();
-		player.updateInventory();
+		kitInventory(player);
 		player.setMaxHealth(20);
 		player.setHealth(20);
 		player.setFoodLevel(20);
@@ -98,19 +95,6 @@ public class GameManager {
 		for (PotionEffect effect : player.getActivePotionEffects()) {
 			player.removePotionEffect(effect.getType());
 		}
-		KitUtils.kitMenu(player);
-		// Kitの選択Itemを渡して、ingameならKitを選んだら既に走ってるゲームに参加できるように
-		ItemStack kit = new ItemStack(Material.DIAMOND_SWORD);
-		ItemMeta meta = kit.getItemMeta();
-		meta.setDisplayName(c("&eKitSelect"));
-		kit.setItemMeta(meta);
-		player.getInventory().setItem(0, kit);
-
-		ItemStack bkit = new ItemStack(Material.CHEST);
-		ItemMeta bmeta = bkit.getItemMeta();
-		bmeta.setDisplayName(c("&dBuy Kit"));
-		bkit.setItemMeta(bmeta);
-		player.getInventory().setItem(2, bkit);
 
 		// ゲーム中にカウントダウン走るとダメなので、別で処理
 		// ゲーム中と通常の参加処理を分ける
@@ -217,10 +201,10 @@ public class GameManager {
 
 					public void run() {
 						int sec = 16;
-						if (Bukkit.getOnlinePlayers().size() >= min_players) {
+						if (entried.size() >= min_players) {
 							count++;
 							if (count == sec) {
-								Bukkit.getOnlinePlayers().forEach(players -> {
+								entried.forEach(players -> {
 									players.closeInventory();
 									SidebarUtils.SidebarCreate(players);
 								});
@@ -236,8 +220,8 @@ public class GameManager {
 							} else {
 								b(c("&a開始まで残り&6" + (sec - count) + "&a秒"));
 								if (sec - count <= 5) {
-									Bukkit.getOnlinePlayers().forEach(players -> players
-											.playSound(players.getLocation(), Sound.NOTE_PLING, 1, 1));
+									entried.forEach(players -> players.playSound(players.getLocation(),
+											Sound.NOTE_PLING, 1, 1));
 								}
 							}
 						} else {
@@ -255,7 +239,8 @@ public class GameManager {
 	@SuppressWarnings("deprecation")
 	public static void addGamePlayer(Player player) {
 		FileConfiguration f = main.getConfig();
-		gamenow.add(player);
+		if (!gamenow.contains(player))
+			gamenow.add(player);
 		SidebarUtils.SidebarCreate(player);
 		game = GameType.valueOf(f.getString("Arena" + gamenumber + ".Type"));
 		Location redLoc = null;
@@ -331,7 +316,7 @@ public class GameManager {
 			b(c("&6目標: &f最後の一人になるまで生き残る"));
 		}
 		b(c("&a=============================="));
-		Bukkit.getOnlinePlayers().forEach(players -> {
+		entried.forEach(players -> {
 			players.setHealth(20);
 			players.setFoodLevel(20);
 			players.playSound(players.getLocation(), Sound.NOTE_PLING, 1, 2);
@@ -343,7 +328,7 @@ public class GameManager {
 				seconds++;
 				if (ingame) {
 					SidebarUtils.SidebarSeconds();
-					if (Bukkit.getOnlinePlayers().size() < min_players) {
+					if (entried.size() < min_players) {
 						GameEnd(GameTeam.NONE);
 						TDMRed_Score = 0;
 						TDMBlue_Score = 0;
@@ -443,9 +428,9 @@ public class GameManager {
 					b(c("&7次のゲーム準備まで残り&6" + (16 - count) + "&7秒"));
 				} else if (count == 16) {
 					SidebarUtils.SidebarUnregist();
-					Bukkit.getOnlinePlayers().forEach(players -> {
+					entried.forEach(players -> {
 						players.teleport(players.getWorld().getSpawnLocation());
-						addPlayer(players);
+						KitUtils.kitMenu(players);
 					});
 					cancel();
 				}
@@ -468,14 +453,8 @@ public class GameManager {
 		CTWBlue.getPlayers().forEach(entry -> CTWBlue.removePlayer(entry));
 		TDMRed.getPlayers().forEach(entry -> TDMRed.removePlayer(entry));
 		TDMBlue.getPlayers().forEach(entry -> TDMBlue.removePlayer(entry));
-		ItemStack air = new ItemStack(Material.AIR);
-		Bukkit.getOnlinePlayers().forEach(players -> {
-			players.getInventory().setHelmet(air);
-			players.getInventory().setChestplate(air);
-			players.getInventory().setLeggings(air);
-			players.getInventory().setBoots(air);
-			players.getInventory().clear();
-			players.updateInventory();
+		entried.forEach(players -> {
+			kitInventory(players);
 			players.setHealth(20);
 			players.setFoodLevel(20);
 			players.setLevel(0);
@@ -486,6 +465,16 @@ public class GameManager {
 			}
 			players.getActivePotionEffects().forEach(potions -> players.removePotionEffect(potions.getType()));
 		});
+	}
+
+	public static void kitInventory(Player player) {
+		ItemStack air = new ItemStack(Material.AIR);
+		player.getInventory().setHelmet(air);
+		player.getInventory().setChestplate(air);
+		player.getInventory().setLeggings(air);
+		player.getInventory().setBoots(air);
+		player.getInventory().clear();
+		player.updateInventory();
 	}
 
 	public static enum GameType {
