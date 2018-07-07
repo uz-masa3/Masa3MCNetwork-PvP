@@ -20,10 +20,14 @@ public class KitMenu implements CommandExecutor {
 					sender.sendMessage(color("&5/kitmenu [player]"));
 				}
 			} else if (args.length == 1) {
-				if (Bukkit.getPlayer(args[0]) != null) {
-					KitUtils.kitMenu(Bukkit.getPlayer(args[0]));
-				} else {
-					sender.sendMessage(color("&5プレイヤーが存在しません"));
+				if (sender.isOp()) {
+					if (Bukkit.getPlayer(args[0]) != null) {
+						KitUtils.kitMenu(Bukkit.getPlayer(args[0]));
+					} else {
+						sender.sendMessage(color("&5プレイヤーが存在しません"));
+					}
+				}else {
+					sender.sendMessage(color("&5権限がありません"));
 				}
 			} else {
 				sender.sendMessage(color("&5/kitmenu [player]"));

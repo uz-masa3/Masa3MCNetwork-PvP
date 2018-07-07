@@ -1,5 +1,5 @@
 ﻿name: masa3MC
-version: 1.5.6-2018.07.08
+version: 1.6.0-2018.07.08
 main: net.masa3mc.pvp2.Main
 author: uz_masa3
 commands:
@@ -24,6 +24,9 @@ commands:
    setting:
       description: Setings
       permission: masa3MC.command.setting
+   nextgame:
+      description: nextGame
+      permission: masa3MC.command.nextgame
 permissions:
   masa3MC.command.kitmenu:
     default: true
@@ -39,3 +42,6 @@ permissions:
     default: true
   masa3MC.command.setting:
     default: op
+  masa3MC.command.nextgame:
+    default: op
+

@@ -11,6 +11,7 @@ import net.masa3mc.pvp2.cmds.GameEnd;
 import net.masa3mc.pvp2.cmds.GameStart;
 import net.masa3mc.pvp2.cmds.KitMenu;
 import net.masa3mc.pvp2.cmds.LoadKit;
+import net.masa3mc.pvp2.cmds.NextGame;
 import net.masa3mc.pvp2.cmds.Point;
 import net.masa3mc.pvp2.cmds.SetKit;
 import net.masa3mc.pvp2.cmds.Setting;
@@ -42,6 +43,7 @@ public class Main extends JavaPlugin {
 		getCommand("setkit").setExecutor(new SetKit());
 		getCommand("point").setExecutor(new Point());
 		getCommand("setting").setExecutor(new Setting());
+		getCommand("nextgame").setExecutor(new NextGame());
 
 		Scoreboard board = Bukkit.getScoreboardManager().getMainScoreboard();
 		if (board.getObjective("Kills") == null)
@@ -64,7 +66,7 @@ public class Main extends JavaPlugin {
 			players.updateInventory();
 			players.setHealth(20);
 			players.setFoodLevel(20);
-			GameManager.kitInventory(players,true);
+			GameManager.kitInventory(players, true);
 		});
 		setupEconomy();
 	}

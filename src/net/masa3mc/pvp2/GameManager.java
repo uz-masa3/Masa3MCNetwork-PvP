@@ -428,6 +428,7 @@ public class GameManager {
 	private static void reset(boolean fireworks) {
 		ingame = false;
 		nextcountdown = false;
+		isSelectNumber = false;
 		delentities.forEach(e -> {
 			if (!e.isDead())
 				e.remove();
