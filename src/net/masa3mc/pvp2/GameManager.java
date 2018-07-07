@@ -106,17 +106,17 @@ public class GameManager {
 				} else {
 					if (CTWRed.getPlayers().size() == 0) {
 						CTWRed.addPlayer(player);
-						player.sendMessage(c("&c赤チーム&6に参加しました"));
+						b(c("&c" + player.getName() + "&6が&c赤チーム&6に参加しました"));
 					} else if (CTWBlue.getPlayers().size() == 0) {
 						CTWBlue.addPlayer(player);
-						player.sendMessage(c("&9青チーム&6に参加しました"));
+						b(c("&c" + player.getName() + "&6が&9青チーム&6に参加しました"));
 					} else {
 						if ((CTWBlue.getPlayers().size() + CTWRed.getPlayers().size()) % 2 == 0) {
 							CTWRed.addPlayer(player);
-							player.sendMessage(c("&c赤チーム&6に参加しました"));
+							b(c("&c" + player.getName() + "&6が&c赤チーム&6に参加しました"));
 						} else {
 							CTWBlue.addPlayer(player);
-							player.sendMessage(c("&9青チーム&6に参加しました"));
+							b(c("&c" + player.getName() + "&6が&9青チーム&6に参加しました"));
 						}
 					}
 					addGamePlayer(player);
@@ -127,17 +127,17 @@ public class GameManager {
 				} else {
 					if (TDMRed.getPlayers().size() == 0) {
 						TDMRed.addPlayer(player);
-						player.sendMessage(c("&c赤チーム&6に参加しました"));
+						b(c("&c" + player.getName() + "&6が&c赤チーム&6に参加しました"));
 					} else if (TDMBlue.getPlayers().size() == 0) {
 						TDMBlue.addPlayer(player);
-						player.sendMessage(c("&9青チーム&6に参加しました"));
+						b(c("&c" + player.getName() + "&6が&9青チーム&6に参加しました"));
 					} else {
 						if ((TDMBlue.getPlayers().size() + TDMRed.getPlayers().size()) % 2 == 0) {
 							TDMRed.addPlayer(player);
-							player.sendMessage(c("&c赤チーム&6に参加しました"));
+							b(c("&c" + player.getName() + "&6が&c赤チーム&6に参加しました"));
 						} else {
 							TDMBlue.addPlayer(player);
-							player.sendMessage(c("&9青チーム&6に参加しました"));
+							b(c("&c" + player.getName() + "&6が&9青チーム&6に参加しました"));
 						}
 					}
 				}
@@ -158,10 +158,10 @@ public class GameManager {
 				} else {
 					if ((CTWBlue.getPlayers().size() + CTWRed.getPlayers().size()) % 2 == 0) {
 						CTWRed.addPlayer(player);
-						player.sendMessage(c("&c赤チーム&6に参加しました"));
+						b(c("&c" + player.getName() + "&6が&c赤チーム&6に参加しました"));
 					} else {
 						CTWBlue.addPlayer(player);
-						player.sendMessage(c("&9青チーム&6に参加しました"));
+						b(c("&c" + player.getName() + "&6が&9青チーム&6に参加しました"));
 					}
 				}
 			} else if (a.equals(GameType.TDM)) { // 次のゲームがTDMなら
@@ -170,10 +170,10 @@ public class GameManager {
 				} else {
 					if ((TDMBlue.getPlayers().size() + TDMRed.getPlayers().size()) % 2 == 0) {
 						TDMRed.addPlayer(player);
-						player.sendMessage(c("&c赤チーム&6に参加しました"));
+						b(c("&c" + player.getName() + "&6が&c赤チーム&6に参加しました"));
 					} else {
 						TDMBlue.addPlayer(player);
-						player.sendMessage(c("&9青チーム&6に参加しました"));
+						b(c("&c" + player.getName() + "&6が&9青チーム&6に参加しました"));
 					}
 				}
 			} else if (a.equals(GameType.SW)) {
@@ -407,16 +407,16 @@ public class GameManager {
 
 			public void run() {
 				count++;
-				if (count == 1) {
-					b(c("&7次のゲーム準備までのカウントダウンが始まりました"));
-				} else if (count != 16 && (16 - count <= 10)) {
+				if (count != 16 && (16 - count <= 10)) {
 					b(c("&7次のゲーム準備まで残り&6" + (16 - count) + "&7秒"));
 				} else if (count == 16) {
 					SidebarUtils.SidebarUnregist();
 					entried.forEach(players -> {
 						players.teleport(players.getWorld().getSpawnLocation());
 						KitUtils.kitMenu(players);
+						kitInventory(players, true);
 					});
+					entried.clear();
 					cancel();
 				}
 			}

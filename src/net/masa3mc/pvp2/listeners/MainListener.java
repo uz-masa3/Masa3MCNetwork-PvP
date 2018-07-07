@@ -15,6 +15,7 @@ import org.bukkit.Sound;
 import org.bukkit.block.Block;
 import org.bukkit.block.Chest;
 import org.bukkit.block.Sign;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
@@ -37,6 +38,7 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -44,12 +46,14 @@ import org.bukkit.scheduler.BukkitRunnable;
 
 import net.masa3mc.pvp2.GameManager;
 import net.masa3mc.pvp2.Main;
+import net.masa3mc.pvp2.GameManager.GameType;
 import net.masa3mc.pvp2.utils.ChestUtils;
 import net.masa3mc.pvp2.utils.KitUtils;
 import net.masa3mc.pvp2.utils.PlayerUtils;
 import net.masa3mc.pvp2.utils.PointUtils;
 import net.masa3mc.pvp2.utils.SidebarUtils;
 import net.milkbowl.vault.economy.EconomyResponse;
+import static net.masa3mc.pvp2.GameManager.*;
 
 public class MainListener implements Listener {
 
@@ -72,58 +76,62 @@ public class MainListener implements Listener {
 		int y = loc.getBlockY();
 		int z = loc.getBlockZ();
 		Block b = event.getBlock();
-		String pos = w + "," + x + "," + y + "," + z;
-		int ticks = GameManager.canbreaks.getInt("Arena" + GameManager.gamenumber + ".canbreaks." + pos);
-		if (ticks > 0) {
-			if (!GameManager.breaking.containsKey(loc)) {
-				event.setCancelled(true);
-				player.getInventory().addItem(new ItemStack(b.getType()));
-				player.updateInventory();
-				GameManager.breaking.put(loc, b.getType());
-				if (ticks >= 20) {
+		if (ingame) {
+			String pos = w + "," + x + "," + y + "," + z;
+			int ticks = canbreaks.getInt("Arena" + gamenumber + ".canbreaks." + pos);
+			if (ticks > 0) {
+				if (!breaking.containsKey(loc)) {
+					event.setCancelled(true);
+					player.getInventory().addItem(new ItemStack(b.getType()));
+					player.updateInventory();
+					breaking.put(loc, b.getType());
+					if (ticks >= 20) {
+						new BukkitRunnable() {
+							public void run() {
+								loc.getWorld().playEffect(loc, Effect.STEP_SOUND, Material.OBSIDIAN.getId());
+								loc.getWorld().playSound(loc, Sound.DIG_STONE, 1, 1);
+								b.setType(Material.OBSIDIAN);
+								cancel();
+							}
+						}.runTaskLater(main, 3);
+					}
 					new BukkitRunnable() {
 						public void run() {
-							loc.getWorld().playEffect(loc, Effect.STEP_SOUND, Material.OBSIDIAN.getId());
+							b.setType(breaking.get(loc));
+							loc.getWorld().playEffect(loc, Effect.STEP_SOUND, b.getTypeId());
 							loc.getWorld().playSound(loc, Sound.DIG_STONE, 1, 1);
-							b.setType(Material.OBSIDIAN);
+							breaking.remove(loc);
 							cancel();
 						}
-					}.runTaskLater(main, 3);
+					}.runTaskLater(main, ticks);
+				} else {
+					player.sendMessage(c("&c再設置されるまでお待ちください"));
+					event.setCancelled(true);
 				}
-				new BukkitRunnable() {
-					public void run() {
-						b.setType(GameManager.breaking.get(loc));
-						loc.getWorld().playEffect(loc, Effect.STEP_SOUND, b.getTypeId());
-						loc.getWorld().playSound(loc, Sound.DIG_STONE, 1, 1);
-						GameManager.breaking.remove(loc);
-						cancel();
-					}
-				}.runTaskLater(main, ticks);
 			} else {
-				player.sendMessage(c("&c再設置されるまでお待ちください"));
+				player.sendMessage(c("&cそこは壊せません"));
 				event.setCancelled(true);
 			}
 		} else {
-			player.sendMessage(c("&cそこは壊せません"));
-			event.setCancelled(true);
-		}
-
-		if (player.isOp() && player.getGameMode().equals(GameMode.CREATIVE)) {
-			if (player.getItemInHand() == null) {
-				return;
-			}
-			if (player.getItemInHand().getType().equals(Material.ARROW) && !GameManager.ingame) {
-				Block block = event.getBlock();
-				event.setCancelled(true);
-				if (block.getType().equals(Material.CHEST)) {
-					if (ChestUtils.saveChest((Chest) block.getState())) {
-						player.sendMessage(c("&6チェストの登録が正常に完了しました"));
-					} else {
-						player.sendMessage(c("&cチェストの登録中にエラーが発生しました"));
-					}
-				} else {
-					player.sendMessage(c("&cチェスト以外は登録できません"));
+			if (player.isOp() && player.getGameMode().equals(GameMode.CREATIVE)) {
+				if (player.getItemInHand() == null) {
+					return;
 				}
+				if (player.getItemInHand().getType().equals(Material.ARROW)) {
+					Block block = event.getBlock();
+					event.setCancelled(true);
+					if (block.getType().equals(Material.CHEST)) {
+						if (ChestUtils.saveChest((Chest) block.getState())) {
+							player.sendMessage(c("&6チェストの登録が正常に完了しました"));
+						} else {
+							player.sendMessage(c("&cチェストの登録中にエラーが発生しました"));
+						}
+					} else {
+						player.sendMessage(c("&cチェスト以外は登録できません"));
+					}
+				}
+			} else {
+				event.setCancelled(true);
 			}
 		}
 	}
@@ -146,19 +154,19 @@ public class MainListener implements Listener {
 	public void join(PlayerJoinEvent event) {
 		Player player = event.getPlayer();
 		event.setJoinMessage(null);
-		GameManager.CTWRed.removePlayer(player);
-		GameManager.CTWBlue.removePlayer(player);
-		GameManager.TDMRed.removePlayer(player);
-		GameManager.TDMBlue.removePlayer(player);
+		CTWRed.removePlayer(player);
+		CTWBlue.removePlayer(player);
+		TDMRed.removePlayer(player);
+		TDMBlue.removePlayer(player);
 		Location spawn = player.getWorld().getSpawnLocation();
 		player.teleport(spawn);
 		player.setBedSpawnLocation(spawn);
-		GameManager.playerkit.remove(player.getUniqueId());
+		playerkit.remove(player.getUniqueId());
 		player.setGameMode(GameMode.SURVIVAL);
 		if (!GameManager.ingame) {
 			SidebarUtils.SidebarUnregist();
 		}
-		GameManager.kitInventory(player, true);
+		kitInventory(player, true);
 		new BukkitRunnable() {
 			public void run() {
 				KitUtils.kitMenu(player);
@@ -171,18 +179,18 @@ public class MainListener implements Listener {
 	public void quit(PlayerQuitEvent event) {
 		Player player = event.getPlayer();
 		event.setQuitMessage(null);
-		GameManager.CTWRed.removePlayer(player);
-		GameManager.CTWBlue.removePlayer(player);
-		GameManager.TDMRed.removePlayer(player);
-		GameManager.TDMBlue.removePlayer(player);
-		GameManager.entried.remove(player);
+		CTWRed.removePlayer(player);
+		CTWBlue.removePlayer(player);
+		TDMRed.removePlayer(player);
+		TDMBlue.removePlayer(player);
+		entried.remove(player);
 		player.getInventory().clear();
 		player.updateInventory();
 	}
 
 	@EventHandler
 	public void damage(EntityDamageEvent event) {
-		if (!GameManager.ingame) {
+		if (!ingame) {
 			event.setCancelled(true);
 			if (event.getCause() == DamageCause.VOID) {
 				Player player = (Player) event.getEntity();
@@ -193,17 +201,14 @@ public class MainListener implements Listener {
 
 	@EventHandler
 	public void hit(ProjectileHitEvent event) {
-		GameManager.delentities.add(event.getEntity());
+		delentities.add(event.getEntity());
 	}
 
 	@EventHandler
 	public void FoodLevelChange(FoodLevelChangeEvent event) {
-		if (!GameManager.ingame) {
-			try {
-				Player player = (Player) event.getEntity();
-				player.setFoodLevel(20);
-			} catch (Exception e) {
-
+		if (!ingame) {
+			if (event.getEntity() instanceof Player) {
+				event.setFoodLevel(20);
 			}
 		}
 	}
@@ -236,16 +241,15 @@ public class MainListener implements Listener {
 			Material type = event.getClickedBlock().getType();
 			if (type.equals(Material.CHEST) || type.equals(Material.FURNACE)) {
 				Location l = event.getClickedBlock().getLocation();
-				YamlConfiguration yml = GameManager.chests;
 				String pos = l.getWorld().getName() + "," + l.getBlockX() + "," + l.getBlockY() + "," + l.getBlockZ();
-				if (yml.getString(pos) == null) {
+				if (chests.getString(pos) == null) {
 					player.sendMessage(c("&cその" + (type.name().equals("CHEST") ? "チェスト" : "かまど") + "は開けれません"));
 					event.setCancelled(true);
 				}
 			} else if (type.equals(Material.WALL_SIGN) || type.equals(Material.SIGN_POST)) {
 				Sign sign = (Sign) event.getClickedBlock().getState();
 				if (sign.getLine(0).equals(c("&2[KitMenu]"))) {
-					if (GameManager.ingame) {
+					if (ingame) {
 						if (!(player.isSneaking() && event.getAction().equals(Action.RIGHT_CLICK_BLOCK))) {
 							player.sendMessage(c("&cKitメニューを開くには&6Shift+看板右クリック&cをしてください。"));
 							return;
@@ -263,8 +267,8 @@ public class MainListener implements Listener {
 
 	@EventHandler
 	public void drop(PlayerDropItemEvent event) {
-		if (GameManager.ingame) {
-			GameManager.delentities.add((Entity) event.getItemDrop());
+		if (ingame) {
+			delentities.add((Entity) event.getItemDrop());
 		} else {
 			event.setCancelled(true);
 		}
@@ -285,12 +289,12 @@ public class MainListener implements Listener {
 				String kit = gui.getString("item" + r + ".kit");
 				if (KitUtils.hasKit(p, kit)) {
 					p.sendMessage(c("&a" + kit + "&6を選択しました"));
-					GameManager.playerkit.put(p.getUniqueId(), kit);
-					if (GameManager.ingame) {
-						if (!GameManager.gamenow.contains(p))
-							GameManager.addPlayer(p);
+					playerkit.put(p.getUniqueId(), kit);
+					if (ingame) {
+						if (!gamenow.contains(p))
+							addPlayer(p);
 					} else {
-							GameManager.addPlayer(p);
+						addPlayer(p);
 					}
 				} else {
 					p.sendMessage(c("&6" + kit + "&cは所持していません"));
@@ -370,9 +374,9 @@ public class MainListener implements Listener {
 	@EventHandler
 	public void creatureSpawn(EntitySpawnEvent event) {
 		if (event.getEntityType().equals(EntityType.DROPPED_ITEM)) {
-			GameManager.delentities.add(event.getEntity());
+			delentities.add(event.getEntity());
 		} else if (event.getEntityType().equals(EntityType.BOAT)) {
-			GameManager.delentities.add(event.getEntity());
+			delentities.add(event.getEntity());
 		} else {
 			event.getEntity().remove();
 			event.setCancelled(true);
@@ -383,12 +387,11 @@ public class MainListener implements Listener {
 	@EventHandler
 	public void enter_enemy_base(PlayerMoveEvent event) {
 		Player player = event.getPlayer();
-		if (GameManager.ingame) {
-			YamlConfiguration yml = GameManager.bases;
+		if (ingame) {
 			Location l = player.getLocation();
 			String pos = l.getWorld().getName() + "," + l.getBlockX() + "," + l.getBlockY() + "," + l.getBlockZ();
-			if (GameManager.CTWRed.hasPlayer(player) || GameManager.TDMRed.hasPlayer(player)) {
-				List<String> bluebase = yml.getStringList("Arena" + GameManager.gamenumber + ".base.blue");
+			if (CTWRed.hasPlayer(player) || TDMRed.hasPlayer(player)) {
+				List<String> bluebase = bases.getStringList("Arena" + gamenumber + ".base.blue");
 				if (bluebase.contains(pos)) {
 					player.teleport(l);
 					if (!inbase.contains(player.getName())) {
@@ -398,8 +401,8 @@ public class MainListener implements Listener {
 				} else {
 					inbase.remove(player.getName());
 				}
-			} else if (GameManager.CTWBlue.hasPlayer(player) || GameManager.TDMBlue.hasPlayer(player)) {
-				List<String> redbase = yml.getStringList("Arena" + GameManager.gamenumber + ".base.red");
+			} else if (CTWBlue.hasPlayer(player) || TDMBlue.hasPlayer(player)) {
+				List<String> redbase = bases.getStringList("Arena" + gamenumber + ".base.red");
 				if (redbase.contains(pos)) {
 					player.teleport(l);
 					if (!inbase.contains(player.getName())) {
@@ -418,18 +421,22 @@ public class MainListener implements Listener {
 		DamageCause cause = p.getLastDamageCause().getCause();
 		if (p.getKiller() instanceof Player) {
 			Player kill = p.getKiller();
-			List<String> reward = main.getConfig().getStringList("Arena" + GameManager.gamenumber + ".KillRewards");
+			List<String> reward = main.getConfig().getStringList("Arena" + gamenumber + ".KillRewards");
 			if (reward != null && !reward.isEmpty()) {
 				for (String m : reward) {
 					kill.getInventory().addItem(new ItemStack(Material.valueOf(m)));
 				}
 			}
 			if (kill != p) {
-				EconomyResponse er = Main.getEconomy().depositPlayer(p.getKiller(), 30.0);
-				if (er.transactionSuccess()) {
-					PlayerUtils.sendActionBarMessage(p.getKiller(), c("&a30Msを手に入れた"));
-				}
-				PointUtils.setPoint(kill.getUniqueId(), PointUtils.getPoint(kill.getUniqueId()) + 1);
+				new Thread() {
+					public void run() {
+						EconomyResponse er = Main.getEconomy().depositPlayer(p.getKiller(), 30.0);
+						if (er.transactionSuccess()) {
+							PlayerUtils.sendActionBarMessage(p.getKiller(), c("&a30Msを手に入れた"));
+						}
+						PointUtils.setPoint(kill.getUniqueId(), PointUtils.getPoint(kill.getUniqueId()) + 1);
+					}
+				}.start();
 			}
 			event.setDeathMessage(c("&7" + p.getName() + "は" + kill.getName() + "に殺害された"));
 		} else if (cause.equals(DamageCause.VOID)) {
@@ -443,45 +450,67 @@ public class MainListener implements Listener {
 		} else if (cause.equals(DamageCause.POISON)) {
 			event.setDeathMessage(c("&7" + p.getName() + "は毒にまみれた"));
 		}
-		EconomyResponse er = Main.getEconomy().depositPlayer(p, -15.0);
-		if (er.transactionSuccess()) {
-			PlayerUtils.sendActionBarMessage(p, c("&c15Msを失った"));
-		}
-		if (GameManager.redFlagPlayer.contains(p)) {
+		new Thread() {
+			public void run() {
+				EconomyResponse er = Main.getEconomy().depositPlayer(p, -15.0);
+				if (er.transactionSuccess()) {
+					PlayerUtils.sendActionBarMessage(p, c("&c15Msを失った"));
+				}
+			}
+		}.start();
+		if (redFlagPlayer.contains(p)) {
 			b(c("&7" + p.getName() + "が&c赤チーム&7の羊毛を落としました"));
-			GameManager.redFlagPlayer.remove(p);
-			if (GameManager.redFlagPlayer.size() == 0) {
+			redFlagPlayer.remove(p);
+			if (redFlagPlayer.size() == 0) {
 				SidebarUtils.SidebarFlag("blue", false);
 			}
 		}
-		if (GameManager.blueFlagPlayer.contains(p)) {
+		if (blueFlagPlayer.contains(p)) {
 			b(c("&7" + p.getName() + "が&9青チーム&7の羊毛を落としました"));
-			GameManager.blueFlagPlayer.remove(p);
-			if (GameManager.blueFlagPlayer.size() == 0) {
+			blueFlagPlayer.remove(p);
+			if (blueFlagPlayer.size() == 0) {
 				SidebarUtils.SidebarFlag("red", false);
 			}
 		}
 		new BukkitRunnable() {
 			@SuppressWarnings("deprecation")
 			public void run() {
-				if (GameManager.CTWRed.hasPlayer(p) || GameManager.TDMRed.hasPlayer(p)) {
-					if (GameManager.playerkit.containsKey(p.getUniqueId())) {
-						KitUtils.kit(p, "red", GameManager.playerkit.get(p.getUniqueId()));
+				if (CTWRed.hasPlayer(p) || TDMRed.hasPlayer(p)) {
+					if (playerkit.containsKey(p.getUniqueId())) {
+						KitUtils.kit(p, "red", playerkit.get(p.getUniqueId()));
 					} else {
-						KitUtils.kit(p, "red",
-								main.getConfig().getString("Arena" + GameManager.gamenumber + ".defaultKit"));
+						KitUtils.kit(p, "red", main.getConfig().getString("Arena" + gamenumber + ".defaultKit"));
 					}
-				} else if (GameManager.CTWBlue.hasPlayer(p) || GameManager.TDMBlue.hasPlayer(p)) {
-					if (GameManager.playerkit.containsKey(p.getUniqueId())) {
-						KitUtils.kit(p, "blue", GameManager.playerkit.get(p.getUniqueId()));
+				} else if (CTWBlue.hasPlayer(p) || TDMBlue.hasPlayer(p)) {
+					if (playerkit.containsKey(p.getUniqueId())) {
+						KitUtils.kit(p, "blue", playerkit.get(p.getUniqueId()));
 					} else {
-						KitUtils.kit(p, "blue",
-								main.getConfig().getString("Arena" + GameManager.gamenumber + ".defaultKit"));
+						KitUtils.kit(p, "blue", main.getConfig().getString("Arena" + gamenumber + ".defaultKit"));
 					}
 				}
 				cancel();
 			}
 		}.runTaskLater(main, 20);
+	}
+
+	@SuppressWarnings("deprecation")
+	@EventHandler
+	public void Respawn(PlayerRespawnEvent event) {
+		Player player = event.getPlayer();
+		if (game.equals(GameType.CTW) || game.equals(GameType.TDM)) {
+			Location location = null;
+			FileConfiguration f = main.getConfig();
+			if (CTWRed.hasPlayer(player) || TDMRed.hasPlayer(player)) {
+				location = new Location(Bukkit.getWorld(f.getString("Arena" + gamenumber + ".Red.W")),
+						f.getInt("Arena" + gamenumber + ".Red.X"), f.getInt("Arena" + gamenumber + ".Red.Y"),
+						f.getInt("Arena" + gamenumber + ".Red.Z"));
+			} else if (CTWBlue.hasPlayer(player) || TDMBlue.hasPlayer(player)) {
+				location = new Location(Bukkit.getWorld(f.getString("Arena" + gamenumber + ".Blue.W")),
+						f.getInt("Arena" + gamenumber + ".Blue.X"), f.getInt("Arena" + gamenumber + ".Blue.Y"),
+						f.getInt("Arena" + gamenumber + ".Blue.Z"));
+			}
+			player.teleport(location.add(0, 1.5, 0));
+		}
 	}
 
 	private String c(String str) {
