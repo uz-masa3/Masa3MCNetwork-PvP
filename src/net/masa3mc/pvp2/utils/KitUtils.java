@@ -3,7 +3,6 @@ package net.masa3mc.pvp2.utils;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
-
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
@@ -64,14 +63,14 @@ public class KitUtils {
 	}
 
 	public static void kitMenu(Player p) {
-		YamlConfiguration gui = YamlConfiguration.loadConfiguration(new File(ins.getDataFolder() + "/gui/kit_gui.yml"));
+		YamlConfiguration kitY = YamlConfiguration.loadConfiguration(new File(ins.getDataFolder() + "/gui/kit.yml"));
 		Inventory inv = Bukkit.createInventory(p, 9, "SelectKit");
 		for (int i = 0; 9 > i; i++) {
-			if (!gui.getString("item" + i + ".type").equalsIgnoreCase("AIR")) {
-				ItemStack item = new ItemStack(Material.valueOf(gui.getString("item" + i + ".type").toUpperCase()));
+			if (!kitY.getString("item" + i + ".type").equalsIgnoreCase("AIR")) {
+				ItemStack item = new ItemStack(Material.valueOf(kitY.getString("item" + i + ".type").toUpperCase()));
 				ItemMeta m = item.getItemMeta();
-				m.setDisplayName(c(gui.getString("item" + i + ".name")));
-				boolean has = hasKit(p, getYamlName(m.getDisplayName()));
+				m.setDisplayName(c(kitY.getString("item" + i + ".name")));
+				boolean has = hasKit(p, kitY.getString("item" + i + ".kit"));
 				m.setLore(Arrays.asList(has ? c("&6所持しています") : c("&c購入してください")));
 				item.setItemMeta(m);
 				inv.setItem(i, item);
@@ -80,15 +79,41 @@ public class KitUtils {
 		p.openInventory(inv);
 	}
 
-	public static boolean buyKit(Player p, String kit) {
+	public static void buyMenu(Player p) {
+		YamlConfiguration buy = YamlConfiguration.loadConfiguration(new File(ins.getDataFolder() + "/gui/kit.yml"));
+		Inventory inv = Bukkit.createInventory(p, 9, "BuyKit");
+		for (int i = 0; 9 > i; i++) {
+			if (!buy.getString("item" + i + ".type").equalsIgnoreCase("AIR")) {
+				ItemStack item = new ItemStack(Material.valueOf(buy.getString("item" + i + ".type").toUpperCase()));
+				ItemMeta m = item.getItemMeta();
+				m.setDisplayName(c(buy.getString("item" + i + ".name")));
+				boolean has = hasKit(p, buy.getString("item" + i + ".kit"));
+				m.setLore(Arrays.asList(has ? c("&6所持しています") : c("&c購入する")));
+				item.setItemMeta(m);
+				inv.setItem(i, item);
+			}
+		}
+		p.openInventory(inv);
+	}
+
+	public static int buyKit(Player p, String kit) {
+		// return 0 - OK
+		// return 1 - NotEnoughMoney
+		// return 2 - Already bought
+		// return 3 - IOException
+		// return 4 - Transaction failure
+		// return 5 - Invalid argument
 		if (p == null || kit == null || kit.isEmpty()) {
-			return false;
+			return 5;
+		}
+		if (hasKit(p, kit)) {
+			return 2;
 		}
 		Economy e = Main.getEconomy();
 		double balance = e.getBalance(p);
 		double price = YamlConfiguration.loadConfiguration(kitFile(kit)).getDouble("price");
 		if (balance < price) {
-			return false;
+			return 1;
 		}
 		EconomyResponse r = e.depositPlayer(p, -price);
 		if (r.transactionSuccess()) {
@@ -98,10 +123,11 @@ public class KitUtils {
 				data.save(playerKitDataFile(p));
 			} catch (IOException e1) {
 				e1.printStackTrace();
+				return 3;
 			}
-			return true;
+			return 0;
 		}
-		return false;
+		return 4;
 	}
 
 	public static boolean hasKit(Player p, String kit) {
@@ -116,13 +142,6 @@ public class KitUtils {
 
 	public static YamlConfiguration playerKitData(Player p) {
 		return YamlConfiguration.loadConfiguration(playerKitDataFile(p));
-	}
-
-	public static String getYamlName(String displayname) {
-		if (displayname.contains("&")||displayname.contains("§")) {
-			return displayname.toLowerCase().substring(2, displayname.length());
-		}
-		return displayname.toLowerCase();
 	}
 
 	public static File playerKitDataFile(Player p) {

@@ -1,13 +1,10 @@
 package net.masa3mc.pvp2.listeners;
 
-import java.util.UUID;
-
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -16,12 +13,9 @@ import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.scheduler.BukkitRunnable;
-
 import net.masa3mc.pvp2.GameManager;
 import net.masa3mc.pvp2.Main;
 import net.masa3mc.pvp2.GameManager.GameType;
-import net.masa3mc.pvp2.utils.PointUtils;
 import net.masa3mc.pvp2.utils.SidebarUtils;
 
 public class SWListener implements Listener {

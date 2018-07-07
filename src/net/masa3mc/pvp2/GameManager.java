@@ -101,9 +101,15 @@ public class GameManager {
 		// Kitの選択Itemを渡して、ingameならKitを選んだら既に走ってるゲームに参加できるように
 		ItemStack kit = new ItemStack(Material.DIAMOND_SWORD);
 		ItemMeta meta = kit.getItemMeta();
-		meta.setDisplayName(c("&eKitSelect &5- &e(RightClick)"));
+		meta.setDisplayName(c("&eKitSelect"));
 		kit.setItemMeta(meta);
 		player.getInventory().setItem(0, kit);
+		
+		ItemStack bkit = new ItemStack(Material.CHEST);
+		ItemMeta bmeta = bkit.getItemMeta();
+		bmeta.setDisplayName(c("&dBuy Kit"));
+		bkit.setItemMeta(bmeta);
+		player.getInventory().setItem(2, bkit);
 
 		// ゲーム中にカウントダウン走るとダメなので、別で処理
 		// ゲーム中と通常の参加処理を分ける

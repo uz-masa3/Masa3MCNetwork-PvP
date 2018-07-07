@@ -44,24 +44,18 @@ public class Main extends JavaPlugin {
 		getCommand("setting").setExecutor(new Setting());
 
 		Scoreboard board = Bukkit.getScoreboardManager().getMainScoreboard();
-		if (board.getObjective("Kills") == null) {
+		if (board.getObjective("Kills") == null)
 			board.registerNewObjective("Kills", "playerKillCount");
-		}
-		if (board.getObjective("Deaths") == null) {
+		if (board.getObjective("Deaths") == null)
 			board.registerNewObjective("Deaths", "deathCount");
-		}
-		if (team("CTW_red") == null) {
+		if (team("CTW_red") == null)
 			board.registerNewTeam("CTW_red").setAllowFriendlyFire(false);
-		}
-		if (team("CTW_blue") == null) {
+		if (team("CTW_blue") == null)
 			board.registerNewTeam("CTW_blue").setAllowFriendlyFire(false);
-		}
-		if (team("TDM_red") == null) {
+		if (team("TDM_red") == null)
 			board.registerNewTeam("TDM_red").setAllowFriendlyFire(false);
-		}
-		if (team("TDM_blue") == null) {
+		if (team("TDM_blue") == null)
 			board.registerNewTeam("TDM_blue").setAllowFriendlyFire(false);
-		}
 		ChestUtils.restoreAllChests();
 		Bukkit.getOnlinePlayers().forEach(players -> {
 			players.teleport(players.getWorld().getSpawnLocation());
@@ -70,6 +64,7 @@ public class Main extends JavaPlugin {
 			players.updateInventory();
 			players.setHealth(20);
 			players.setFoodLevel(20);
+			GameManager.addPlayer(players);
 		});
 		setupEconomy();
 	}
@@ -94,7 +89,7 @@ public class Main extends JavaPlugin {
 			team("TDM_blue").removePlayer(players);
 		});
 	}
-	
+
 	private boolean setupEconomy() {
 		if (getServer().getPluginManager().getPlugin("Vault") == null) {
 			return false;

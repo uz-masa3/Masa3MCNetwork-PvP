@@ -3,6 +3,7 @@ package net.masa3mc.pvp2.listeners;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.bukkit.Bukkit;
@@ -34,6 +35,7 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -142,13 +144,6 @@ public class MainListener implements Listener {
 	public void join(PlayerJoinEvent event) {
 		Player player = event.getPlayer();
 		event.setJoinMessage(null);
-
-		ItemStack kit = new ItemStack(Material.DIAMOND_SWORD);
-		ItemMeta meta = kit.getItemMeta();
-		meta.setDisplayName(c("&eKitSelect &5- &e(RightClick)"));
-		kit.setItemMeta(meta);
-		player.getInventory().setItem(0, kit);
-
 		GameManager.CTWRed.removePlayer(player);
 		GameManager.CTWBlue.removePlayer(player);
 		GameManager.TDMRed.removePlayer(player);
@@ -187,7 +182,7 @@ public class MainListener implements Listener {
 		}.start();
 	}
 
-	@SuppressWarnings("deprecation")
+	@SuppressWarnings({ "deprecation", "unlikely-arg-type" })
 	@EventHandler
 	public void quit(PlayerQuitEvent event) {
 		Player player = event.getPlayer();
@@ -244,10 +239,14 @@ public class MainListener implements Listener {
 				}
 			}
 		}
-		if (player.getItemInHand().getType().equals(Material.DIAMOND_SWORD) && player.getItemInHand().hasItemMeta()
-				&& event.getAction().name().contains("RIGHT")) {
-			event.setCancelled(true);
-			KitUtils.kitMenu(event.getPlayer());
+		if (player.getItemInHand().hasItemMeta() && event.getAction().name().contains("RIGHT")) {
+			if (player.getItemInHand().getType().equals(Material.DIAMOND_SWORD)) {
+				event.setCancelled(true);
+				KitUtils.kitMenu(event.getPlayer());
+			} else if (player.getItemInHand().getType().equals(Material.CHEST)) {
+				event.setCancelled(true);
+				KitUtils.buyMenu(player);
+			}
 		}
 	}
 
@@ -262,14 +261,16 @@ public class MainListener implements Listener {
 
 	@EventHandler
 	public void kitSelect(InventoryClickEvent event) {
-		if (event.getInventory().getName().equals("SelectKit")) {
-			event.setCancelled(true);
-			if (event.getCurrentItem() != null && !event.getCurrentItem().getType().equals(Material.AIR)) {
-				YamlConfiguration gui = YamlConfiguration
-						.loadConfiguration(new File(main.getDataFolder() + "/gui/kit_gui.yml"));
-				int r = event.getRawSlot();
-				Player p = (Player) event.getWhoClicked();
+		if (event.getCurrentItem() != null && !event.getCurrentItem().getType().equals(Material.AIR)) {
+			Inventory eventinv = event.getClickedInventory();
+			String invname = eventinv.getName();
+			Player p = (Player) event.getWhoClicked();
+			int r = event.getRawSlot();
+			if (invname.equals("SelectKit")) {
+				event.setCancelled(true);
 				p.closeInventory();
+				YamlConfiguration gui = YamlConfiguration
+						.loadConfiguration(new File(main.getDataFolder() + "/gui/kit.yml"));
 				String kit = gui.getString("item" + r + ".kit");
 				if (KitUtils.hasKit(p, kit)) {
 					p.sendMessage(c("&a" + kit + "&6を選択しました"));
@@ -279,7 +280,74 @@ public class MainListener implements Listener {
 					}
 				} else {
 					p.sendMessage(c("&6" + kit + "&cは所持していません"));
-					p.sendMessage(c("&cこの機能は開発中のため実装されるまでお待ちください。"));
+				}
+			} else if (invname.equals("BuyKit")) {
+				event.setCancelled(true);
+				p.closeInventory();
+				YamlConfiguration kitY = YamlConfiguration
+						.loadConfiguration(new File(main.getDataFolder() + "/gui/kit.yml"));
+				String kit = kitY.getString("item" + r + ".kit");
+				if (KitUtils.hasKit(p, kit)) {
+					p.sendMessage(c("&6" + kit + "&cは既に持っています"));
+				} else {
+					YamlConfiguration confirm = YamlConfiguration
+							.loadConfiguration(new File(main.getDataFolder() + "/gui/confirm.yml"));
+					Inventory inv = Bukkit.createInventory(p, 27, "BuyConfirm");
+					for (String str : Arrays.asList("confirmyes", "confirmno")) {
+						ItemStack item = new ItemStack(
+								Material.valueOf(confirm.getString(str + ".type").toUpperCase()));
+						ItemMeta meta = item.getItemMeta();
+						meta.setDisplayName(c(confirm.getString(str + ".name")));
+						item.setItemMeta(meta);
+						confirm.getIntegerList(str + ".location").forEach(i -> {
+							inv.setItem(i, item);
+						});
+					}
+					ItemStack kitI = new ItemStack(
+							Material.valueOf(kitY.getString("item" + r + ".type").toUpperCase()));
+					ItemMeta kitM = kitI.getItemMeta();
+					kitM.setDisplayName(c(kitY.getString("item" + r + ".name") + "(ID" + r + ")"));
+					kitI.setItemMeta(kitM);
+					inv.setItem(confirm.getInt("kit.location"), kitI);
+					p.openInventory(inv);
+				}
+			} else if (invname.equals("BuyConfirm")) {
+				event.setCancelled(true);
+				YamlConfiguration confirm = YamlConfiguration
+						.loadConfiguration(new File(main.getDataFolder() + "/gui/confirm.yml"));
+				Material item = event.getCurrentItem().getType();
+				if (item.equals(Material.valueOf(confirm.getString("confirmyes.type").toUpperCase()))) {
+					YamlConfiguration kitY = YamlConfiguration
+							.loadConfiguration(new File(main.getDataFolder() + "/gui/kit.yml"));
+					String kit = eventinv.getItem(confirm.getInt("kit.location")).getItemMeta().getDisplayName();
+					kit = kit.substring(kit.indexOf("ID"), kit.length()).replace("ID", "").replace(")", "");
+					String kitname = kitY.getString("item" + kit + ".kit");
+					switch (KitUtils.buyKit(p, kitname)) {
+					case 0:
+						p.sendMessage(c("&6" + kitname + "を購入しました"));
+						break;
+					case 1:
+						p.sendMessage(c("&cお金が足りません"));
+						break;
+					case 2:
+						p.sendMessage(c("&6" + kit + "&cは既に持っています"));
+						break;
+					case 3:
+						p.sendMessage(c("&cファイルのセーブ中にエラーが発生しました。"));
+						break;
+					case 4:
+						p.sendMessage(c("&cお金の処理中にエラーが発生しました。"));
+						break;
+					case 5:
+						p.sendMessage(c("&c引数が無効です"));
+						break;
+					default:
+						break;
+					}
+					p.closeInventory();
+				} else if (item.equals(Material.valueOf(confirm.getString("confirmno.type").toUpperCase()))) {
+					p.sendMessage(c("&c購入をキャンセルしました。"));
+					p.closeInventory();
 				}
 			}
 		}
