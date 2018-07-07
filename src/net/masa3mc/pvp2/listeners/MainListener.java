@@ -1,7 +1,6 @@
 package net.masa3mc.pvp2.listeners;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -15,13 +14,16 @@ import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.block.Block;
 import org.bukkit.block.Chest;
+import org.bukkit.block.Sign;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.SignChangeEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.FoodLevelChangeEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
@@ -151,9 +153,7 @@ public class MainListener implements Listener {
 		Location spawn = player.getWorld().getSpawnLocation();
 		player.teleport(spawn);
 		player.setBedSpawnLocation(spawn);
-		if (GameManager.playerkit.containsKey(player.getUniqueId())) {
-			GameManager.playerkit.remove(player.getUniqueId());
-		}
+		GameManager.playerkit.remove(player.getUniqueId());
 		if (!GameManager.ingame) {
 			SidebarUtils.SidebarUnregist();
 		}
@@ -163,26 +163,9 @@ public class MainListener implements Listener {
 				GameManager.addPlayer(player);
 			}
 		}.runTaskLater(main, 20);
-		new Thread() {
-			public void run() {
-				YamlConfiguration y = KitUtils.playerKitData(player);
-				if (!y.contains("soldier")) {
-					y.set("soldier", true);
-				}
-				if (!y.contains("archer")) {
-					y.set("archer", true);
-				}
-				try {
-					y.save(KitUtils.playerKitDataFile(player));
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-				this.stop();
-			}
-		}.start();
 	}
 
-	@SuppressWarnings({ "deprecation", "unlikely-arg-type" })
+	@SuppressWarnings({ "deprecation" })
 	@EventHandler
 	public void quit(PlayerQuitEvent event) {
 		Player player = event.getPlayer();
@@ -225,8 +208,29 @@ public class MainListener implements Listener {
 	}
 
 	@EventHandler
+	public void SignChangeEvent(SignChangeEvent event) {
+		if (event.getLine(0).equalsIgnoreCase("[kitmenu]")) {
+			event.setLine(0, c("&2[KitMenu]"));
+			if (event.getLine(2).equals("2")) {
+				event.setLine(2, c("&6-購入する-"));
+			} else {
+				event.setLine(2, c("&6-選ぶ-"));
+			}
+		}
+	}
+
+	@EventHandler
 	public void interact(PlayerInteractEvent event) {
 		Player player = event.getPlayer();
+		if (player.getItemInHand().hasItemMeta() && event.getAction().name().contains("RIGHT")) {
+			if (player.getItemInHand().getType().equals(Material.DIAMOND_SWORD)) {
+				event.setCancelled(true);
+				KitUtils.kitMenu(event.getPlayer());
+			} else if (player.getItemInHand().getType().equals(Material.CHEST)) {
+				event.setCancelled(true);
+				KitUtils.buyMenu(player);
+			}
+		}
 		if (event.getClickedBlock() != null) {
 			Material type = event.getClickedBlock().getType();
 			if (type.equals(Material.CHEST) || type.equals(Material.FURNACE)) {
@@ -237,15 +241,21 @@ public class MainListener implements Listener {
 					player.sendMessage(c("&cその" + (type.name().equals("CHEST") ? "チェスト" : "かまど") + "は開けれません"));
 					event.setCancelled(true);
 				}
-			}
-		}
-		if (player.getItemInHand().hasItemMeta() && event.getAction().name().contains("RIGHT")) {
-			if (player.getItemInHand().getType().equals(Material.DIAMOND_SWORD)) {
-				event.setCancelled(true);
-				KitUtils.kitMenu(event.getPlayer());
-			} else if (player.getItemInHand().getType().equals(Material.CHEST)) {
-				event.setCancelled(true);
-				KitUtils.buyMenu(player);
+			} else if (type.equals(Material.WALL_SIGN) || type.equals(Material.SIGN_POST)) {
+				Sign sign = (Sign) event.getClickedBlock().getState();
+				if (sign.getLine(0).equals(c("&2[KitMenu]"))) {
+					if (GameManager.ingame) {
+						if (!(player.isSneaking() && event.getAction().equals(Action.RIGHT_CLICK_BLOCK))) {
+							player.sendMessage(c("&cKitメニューを開くには&6Shift+看板右クリック&cをしてください。"));
+							return;
+						}
+					}
+					if (sign.getLine(2).equals(c("&6-選ぶ-"))) {
+						KitUtils.kitMenu(player);
+					} else if (sign.getLine(2).equals(c("&6-購入する-"))) {
+						KitUtils.buyMenu(player);
+					}
+				}
 			}
 		}
 	}
@@ -276,7 +286,9 @@ public class MainListener implements Listener {
 					p.sendMessage(c("&a" + kit + "&6を選択しました"));
 					GameManager.playerkit.put(p.getUniqueId(), kit);
 					if (GameManager.ingame) {
-						GameManager.addGamePlayer(p);
+						if (!GameManager.gamenow.contains(p)) {
+							GameManager.addGamePlayer(p);
+						}
 					}
 				} else {
 					p.sendMessage(c("&6" + kit + "&cは所持していません"));
@@ -401,6 +413,7 @@ public class MainListener implements Listener {
 	public void death(PlayerDeathEvent event) {
 		Player p = event.getEntity();
 		event.getDrops().clear();
+		DamageCause cause = p.getLastDamageCause().getCause();
 		if (p.getKiller() instanceof Player) {
 			Player kill = p.getKiller();
 			List<String> reward = main.getConfig().getStringList("Arena" + GameManager.gamenumber + ".KillRewards");
@@ -409,7 +422,6 @@ public class MainListener implements Listener {
 					kill.getInventory().addItem(new ItemStack(Material.valueOf(m)));
 				}
 			}
-			event.setDeathMessage(c("&7" + p.getName() + "は" + kill.getName() + "に殺害された"));
 			if (kill != p) {
 				EconomyResponse er = Main.getEconomy().depositPlayer(p.getKiller(), 30.0);
 				if (er.transactionSuccess()) {
@@ -417,10 +429,17 @@ public class MainListener implements Listener {
 				}
 				PointUtils.setPoint(kill.getUniqueId(), PointUtils.getPoint(kill.getUniqueId()) + 1);
 			}
-		} else if (p.getLastDamageCause().getCause() == DamageCause.VOID) {
+			event.setDeathMessage(c("&7" + p.getName() + "は" + kill.getName() + "に殺害された"));
+		} else if (cause.equals(DamageCause.VOID)) {
 			event.setDeathMessage(c("&7" + p.getName() + "は奈落に落ちた"));
-		} else if (p.getLastDamageCause().getCause() == DamageCause.FALL) {
+		} else if (cause.equals(DamageCause.FALL)) {
 			event.setDeathMessage(c("&7" + p.getName() + "は高所から落ちた"));
+		} else if (cause.equals(DamageCause.LAVA)) {
+			event.setDeathMessage(c("&7" + p.getName() + "は溶岩で焼け死んだ"));
+		} else if (cause.equals(DamageCause.FIRE) || cause.equals(DamageCause.FIRE_TICK)) {
+			event.setDeathMessage(c("&7" + p.getName() + "は火だるまになった"));
+		} else if (cause.equals(DamageCause.POISON)) {
+			event.setDeathMessage(c("&7" + p.getName() + "は毒にまみれた"));
 		}
 		EconomyResponse er = Main.getEconomy().depositPlayer(p, -15.0);
 		if (er.transactionSuccess()) {

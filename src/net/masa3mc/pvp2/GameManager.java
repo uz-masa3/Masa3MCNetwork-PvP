@@ -36,7 +36,8 @@ public class GameManager {
 
 	public static boolean ingame = false;
 	public static List<Entity> delentities = new ArrayList<Entity>();
-	public static List<UUID> entried = new ArrayList<UUID>();
+	public static List<Player> entried = new ArrayList<Player>();
+	public static List<Player> gamenow = new ArrayList<Player>();
 	public static int gamenumber = 0;
 	public static boolean isSelectNumber = false;
 
@@ -80,7 +81,7 @@ public class GameManager {
 	// サーバー参加時に呼び出される
 	@SuppressWarnings("deprecation")
 	public static void addPlayer(Player player) {
-		entried.add(player.getUniqueId());
+		entried.add(player);
 		// Inventory消去とか
 		player.getInventory().setHelmet(new ItemStack(Material.AIR));
 		player.getInventory().setChestplate(new ItemStack(Material.AIR));
@@ -104,7 +105,7 @@ public class GameManager {
 		meta.setDisplayName(c("&eKitSelect"));
 		kit.setItemMeta(meta);
 		player.getInventory().setItem(0, kit);
-		
+
 		ItemStack bkit = new ItemStack(Material.CHEST);
 		ItemMeta bmeta = bkit.getItemMeta();
 		bmeta.setDisplayName(c("&dBuy Kit"));
@@ -155,7 +156,7 @@ public class GameManager {
 					}
 				}
 			} else if (game.equals(GameType.SW)) {
-				// TODO
+
 			}
 		} else {
 			GameType a = GameType.CTW;
@@ -206,7 +207,7 @@ public class GameManager {
 					}
 				}
 			} else if (a.equals(GameType.SW)) {
-				// TODO
+
 			}
 
 			if (entried.size() >= min_players && !nextcountdown) {
@@ -215,9 +216,10 @@ public class GameManager {
 					int count = 0;
 
 					public void run() {
+						int sec = 16;
 						if (Bukkit.getOnlinePlayers().size() >= min_players) {
 							count++;
-							if (count == 6) {
+							if (count == sec) {
 								Bukkit.getOnlinePlayers().forEach(players -> {
 									players.closeInventory();
 									SidebarUtils.SidebarCreate(players);
@@ -232,9 +234,11 @@ public class GameManager {
 								nextcountdown = false;
 								cancel();
 							} else {
-								b(c("&a開始まで残り&6" + (6 - count) + "&a秒"));
-								Bukkit.getOnlinePlayers().forEach(
-										players -> players.playSound(players.getLocation(), Sound.NOTE_PLING, 1, 1));
+								b(c("&a開始まで残り&6" + (sec - count) + "&a秒"));
+								if (sec - count <= 5) {
+									Bukkit.getOnlinePlayers().forEach(players -> players
+											.playSound(players.getLocation(), Sound.NOTE_PLING, 1, 1));
+								}
 							}
 						} else {
 							b(c("&cゲーム開始には" + min_players + "人以上必要です"));
@@ -251,6 +255,7 @@ public class GameManager {
 	@SuppressWarnings("deprecation")
 	public static void addGamePlayer(Player player) {
 		FileConfiguration f = main.getConfig();
+		gamenow.add(player);
 		SidebarUtils.SidebarCreate(player);
 		game = GameType.valueOf(f.getString("Arena" + gamenumber + ".Type"));
 		Location redLoc = null;
@@ -263,11 +268,11 @@ public class GameManager {
 					f.getInt("Arena" + gamenumber + ".Blue.X"), f.getInt("Arena" + gamenumber + ".Blue.Y"),
 					f.getInt("Arena" + gamenumber + ".Blue.Z"));
 		}
+		player.setGameMode(GameMode.SURVIVAL);
 		if (game.equals(GameType.CTW)) {
 			if (CTWRed.hasPlayer(player)) {
 				player.teleport(redLoc);
 				player.setBedSpawnLocation(redLoc, true);
-				player.setGameMode(GameMode.SURVIVAL);
 				if (playerkit.containsKey(player.getUniqueId())) {
 					KitUtils.kit(player, "red", playerkit.get(player.getUniqueId()));
 				} else {
@@ -276,7 +281,6 @@ public class GameManager {
 			} else if (CTWBlue.hasPlayer(player)) {
 				player.teleport(blueLoc);
 				player.setBedSpawnLocation(blueLoc, true);
-				player.setGameMode(GameMode.SURVIVAL);
 				if (playerkit.containsKey(player.getUniqueId())) {
 					KitUtils.kit(player, "blue", playerkit.get(player.getUniqueId()));
 				} else {
@@ -287,7 +291,6 @@ public class GameManager {
 			if (TDMRed.hasPlayer(player)) {
 				player.teleport(redLoc);
 				player.setBedSpawnLocation(redLoc, true);
-				player.setGameMode(GameMode.SURVIVAL);
 				if (playerkit.containsKey(player.getUniqueId())) {
 					KitUtils.kit(player, "red", playerkit.get(player.getUniqueId()));
 				} else {
@@ -296,7 +299,6 @@ public class GameManager {
 			} else if (TDMBlue.hasPlayer(player)) {
 				player.teleport(blueLoc);
 				player.setBedSpawnLocation(blueLoc, true);
-				player.setGameMode(GameMode.SURVIVAL);
 				if (playerkit.containsKey(player.getUniqueId())) {
 					KitUtils.kit(player, "blue", playerkit.get(player.getUniqueId()));
 				} else {
@@ -304,7 +306,7 @@ public class GameManager {
 				}
 			}
 		} else if (game.equals(GameType.SW)) {
-			// TODO
+
 		}
 	}
 
@@ -366,7 +368,7 @@ public class GameManager {
 									GameEnd(GameTeam.NONE);
 								}
 							} else if (game.equals(GameType.SW)) {
-								// TODO
+
 							}
 							TDMRed_Score = 0;
 							TDMBlue_Score = 0;
@@ -383,18 +385,11 @@ public class GameManager {
 	}
 
 	// 終わりのカウント || 羊毛設置で呼び出す
-	@SuppressWarnings("deprecation")
 	public static void GameEnd(GameTeam team) {
 		if (ingame) {
 			ingame = false;
 			blueFlagPlayer.clear();
 			redFlagPlayer.clear();
-			Bukkit.getOnlinePlayers().forEach(players -> {
-				CTWRed.getPlayers().forEach(p -> CTWRed.removePlayer(p));
-				CTWBlue.getPlayers().forEach(p -> CTWBlue.removePlayer(p));
-				TDMRed.getPlayers().forEach(p -> TDMRed.removePlayer(p));
-				TDMBlue.getPlayers().forEach(p -> TDMBlue.removePlayer(p));
-			});
 			ChestUtils.restoreAllChests();
 			breaking.forEach((l, b) -> {
 				l.getBlock().setType(b);
@@ -415,7 +410,6 @@ public class GameManager {
 		}
 	}
 
-	// TODO
 	public static void GameEnd(Player... players) {
 		if (ingame) {
 			ChestUtils.restoreAllChests();
@@ -468,6 +462,7 @@ public class GameManager {
 			if (!e.isDead())
 				e.remove();
 		});
+		gamenow.clear();
 		SidebarUtils.SidebarUnregist();
 		CTWRed.getPlayers().forEach(entry -> CTWRed.removePlayer(entry));
 		CTWBlue.getPlayers().forEach(entry -> CTWBlue.removePlayer(entry));
