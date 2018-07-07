@@ -11,7 +11,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
-
 import net.masa3mc.pvp2.Main;
 import net.milkbowl.vault.economy.Economy;
 import net.milkbowl.vault.economy.EconomyResponse;
@@ -87,8 +86,10 @@ public class KitUtils {
 				ItemStack item = new ItemStack(Material.valueOf(buy.getString("item" + i + ".type").toUpperCase()));
 				ItemMeta m = item.getItemMeta();
 				m.setDisplayName(c(buy.getString("item" + i + ".name")));
+
+				String price = c("&6Price: " + kitYml(buy.getString("item" + i + ".kit")).getInt("price"));
 				boolean has = hasKit(p, buy.getString("item" + i + ".kit"));
-				m.setLore(Arrays.asList(has ? c("&6所持しています") : c("&c購入する")));
+				m.setLore(Arrays.asList(has ? c("&6所持しています") : c("&c購入する"), price));
 				item.setItemMeta(m);
 				inv.setItem(i, item);
 			}
@@ -138,6 +139,10 @@ public class KitUtils {
 
 	public static File kitFile(String kit) {
 		return new File(ins.getDataFolder() + "/kit/" + kit + ".yml");
+	}
+
+	public static YamlConfiguration kitYml(String kit) {
+		return YamlConfiguration.loadConfiguration(kitFile(kit));
 	}
 
 	public static YamlConfiguration playerKitData(Player p) {

@@ -64,6 +64,7 @@ public class Main extends JavaPlugin {
 			players.updateInventory();
 			players.setHealth(20);
 			players.setFoodLevel(20);
+			GameManager.kitInventory(players,true);
 		});
 		setupEconomy();
 	}

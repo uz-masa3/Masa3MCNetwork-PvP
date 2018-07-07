@@ -154,10 +154,11 @@ public class MainListener implements Listener {
 		player.teleport(spawn);
 		player.setBedSpawnLocation(spawn);
 		GameManager.playerkit.remove(player.getUniqueId());
+		player.setGameMode(GameMode.SURVIVAL);
 		if (!GameManager.ingame) {
 			SidebarUtils.SidebarUnregist();
 		}
-		GameManager.kitInventory(player);
+		GameManager.kitInventory(player, true);
 		new BukkitRunnable() {
 			public void run() {
 				KitUtils.kitMenu(player);
@@ -175,8 +176,8 @@ public class MainListener implements Listener {
 		GameManager.TDMRed.removePlayer(player);
 		GameManager.TDMBlue.removePlayer(player);
 		GameManager.entried.remove(player);
-		event.getPlayer().getInventory().clear();
-		event.getPlayer().updateInventory();
+		player.getInventory().clear();
+		player.updateInventory();
 	}
 
 	@EventHandler
@@ -286,11 +287,9 @@ public class MainListener implements Listener {
 					p.sendMessage(c("&a" + kit + "&6を選択しました"));
 					GameManager.playerkit.put(p.getUniqueId(), kit);
 					if (GameManager.ingame) {
-						if (!GameManager.gamenow.contains(p)) {
-							GameManager.addGamePlayer(p);
-						}
+						if (!GameManager.gamenow.contains(p))
+							GameManager.addPlayer(p);
 					} else {
-						if (!GameManager.entried.contains(p))
 							GameManager.addPlayer(p);
 					}
 				} else {

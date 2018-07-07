@@ -3,7 +3,9 @@ package net.masa3mc.pvp2;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import org.bukkit.Bukkit;
@@ -36,8 +38,8 @@ public class GameManager {
 
 	public static boolean ingame = false;
 	public static List<Entity> delentities = new ArrayList<Entity>();
-	public static List<Player> entried = new ArrayList<Player>();
-	public static List<Player> gamenow = new ArrayList<Player>();
+	public static Set<Player> entried = new HashSet<Player>();
+	public static Set<Player> gamenow = new HashSet<Player>();
 	public static int gamenumber = 0;
 	public static boolean isSelectNumber = false;
 
@@ -81,11 +83,10 @@ public class GameManager {
 	// サーバー参加時に呼び出される
 	@SuppressWarnings("deprecation")
 	public static void addPlayer(Player player) {
-		if (!entried.contains(player))
-			entried.add(player);
+		entried.add(player);
 
 		// Inventory消去とか
-		kitInventory(player);
+		kitInventory(player, true);
 		player.setMaxHealth(20);
 		player.setHealth(20);
 		player.setFoodLevel(20);
@@ -118,6 +119,7 @@ public class GameManager {
 							player.sendMessage(c("&9青チーム&6に参加しました"));
 						}
 					}
+					addGamePlayer(player);
 				}
 			} else if (game.equals(GameType.TDM)) {
 				if (TDMRed.hasPlayer(player) || TDMBlue.hasPlayer(player)) { // 既に参加してたら無効
@@ -154,40 +156,24 @@ public class GameManager {
 				if (CTWRed.hasPlayer(player) || CTWBlue.hasPlayer(player)) {
 					player.sendMessage(c("&c既に参加しています"));
 				} else {
-					if (CTWRed.getPlayers().size() == 0) {
+					if ((CTWBlue.getPlayers().size() + CTWRed.getPlayers().size()) % 2 == 0) {
 						CTWRed.addPlayer(player);
 						player.sendMessage(c("&c赤チーム&6に参加しました"));
-					} else if (CTWBlue.getPlayers().size() == 0) {
+					} else {
 						CTWBlue.addPlayer(player);
 						player.sendMessage(c("&9青チーム&6に参加しました"));
-					} else {
-						if ((CTWBlue.getPlayers().size() + CTWRed.getPlayers().size()) % 2 == 0) {
-							CTWRed.addPlayer(player);
-							player.sendMessage(c("&c赤チーム&6に参加しました"));
-						} else {
-							CTWBlue.addPlayer(player);
-							player.sendMessage(c("&9青チーム&6に参加しました"));
-						}
 					}
 				}
 			} else if (a.equals(GameType.TDM)) { // 次のゲームがTDMなら
 				if (TDMRed.hasPlayer(player) || TDMBlue.hasPlayer(player)) {
 					player.sendMessage(c("&c既に参加しています"));
 				} else {
-					if (TDMRed.getPlayers().size() == 0) {
+					if ((TDMBlue.getPlayers().size() + TDMRed.getPlayers().size()) % 2 == 0) {
 						TDMRed.addPlayer(player);
 						player.sendMessage(c("&c赤チーム&6に参加しました"));
-					} else if (TDMBlue.getPlayers().size() == 0) {
+					} else {
 						TDMBlue.addPlayer(player);
 						player.sendMessage(c("&9青チーム&6に参加しました"));
-					} else {
-						if ((TDMBlue.getPlayers().size() + TDMRed.getPlayers().size()) % 2 == 0) {
-							TDMRed.addPlayer(player);
-							player.sendMessage(c("&c赤チーム&6に参加しました"));
-						} else {
-							TDMBlue.addPlayer(player);
-							player.sendMessage(c("&9青チーム&6に参加しました"));
-						}
 					}
 				}
 			} else if (a.equals(GameType.SW)) {
@@ -239,8 +225,7 @@ public class GameManager {
 	@SuppressWarnings("deprecation")
 	public static void addGamePlayer(Player player) {
 		FileConfiguration f = main.getConfig();
-		if (!gamenow.contains(player))
-			gamenow.add(player);
+		gamenow.add(player);
 		SidebarUtils.SidebarCreate(player);
 		game = GameType.valueOf(f.getString("Arena" + gamenumber + ".Type"));
 		Location redLoc = null;
@@ -449,12 +434,12 @@ public class GameManager {
 		});
 		gamenow.clear();
 		SidebarUtils.SidebarUnregist();
-		CTWRed.getPlayers().forEach(entry -> CTWRed.removePlayer(entry));
-		CTWBlue.getPlayers().forEach(entry -> CTWBlue.removePlayer(entry));
-		TDMRed.getPlayers().forEach(entry -> TDMRed.removePlayer(entry));
-		TDMBlue.getPlayers().forEach(entry -> TDMBlue.removePlayer(entry));
+		CTWRed.getPlayers().forEach(players -> CTWRed.removePlayer(players));
+		CTWBlue.getPlayers().forEach(players -> CTWBlue.removePlayer(players));
+		TDMRed.getPlayers().forEach(players -> TDMRed.removePlayer(players));
+		TDMBlue.getPlayers().forEach(players -> TDMBlue.removePlayer(players));
 		entried.forEach(players -> {
-			kitInventory(players);
+			kitInventory(players, false);
 			players.setHealth(20);
 			players.setFoodLevel(20);
 			players.setLevel(0);
@@ -467,13 +452,26 @@ public class GameManager {
 		});
 	}
 
-	public static void kitInventory(Player player) {
+	public static void kitInventory(Player player, boolean bool) {
 		ItemStack air = new ItemStack(Material.AIR);
 		player.getInventory().setHelmet(air);
 		player.getInventory().setChestplate(air);
 		player.getInventory().setLeggings(air);
 		player.getInventory().setBoots(air);
 		player.getInventory().clear();
+		if (bool) {
+			ItemStack kit = new ItemStack(Material.DIAMOND_SWORD);
+			ItemMeta meta = kit.getItemMeta();
+			meta.setDisplayName(c("&eKitSelect"));
+			kit.setItemMeta(meta);
+			player.getInventory().setItem(0, kit);
+
+			ItemStack bkit = new ItemStack(Material.CHEST);
+			ItemMeta bmeta = bkit.getItemMeta();
+			bmeta.setDisplayName(c("&dBuy Kit"));
+			bkit.setItemMeta(bmeta);
+			player.getInventory().setItem(2, bkit);
+		}
 		player.updateInventory();
 	}
 
