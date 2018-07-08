@@ -23,7 +23,6 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scoreboard.Team;
-
 import net.masa3mc.pvp2.utils.ChestUtils;
 import net.masa3mc.pvp2.utils.KitUtils;
 import net.masa3mc.pvp2.utils.SidebarUtils;
@@ -81,11 +80,8 @@ public class GameManager {
 	}
 
 	// サーバー参加時に呼び出される
-	@SuppressWarnings("deprecation")
 	public static void addPlayer(Player player) {
 		entried.add(player);
-
-		// Inventory消去とか
 		kitInventory(player, true);
 		player.setMaxHealth(20);
 		player.setHealth(20);
@@ -96,90 +92,18 @@ public class GameManager {
 		for (PotionEffect effect : player.getActivePotionEffects()) {
 			player.removePotionEffect(effect.getType());
 		}
-
-		// ゲーム中にカウントダウン走るとダメなので、別で処理
-		// ゲーム中と通常の参加処理を分ける
 		if (ingame) {
-			if (game.equals(GameType.CTW)) {
-				if (CTWRed.hasPlayer(player) || CTWBlue.hasPlayer(player)) { // 既に参加してたら無効
-					player.sendMessage(c("&c既に参加しています"));
-				} else {
-					if (CTWRed.getPlayers().size() == 0) {
-						CTWRed.addPlayer(player);
-						b(c("&c" + player.getName() + "&6が&c赤チーム&6に参加しました"));
-					} else if (CTWBlue.getPlayers().size() == 0) {
-						CTWBlue.addPlayer(player);
-						b(c("&c" + player.getName() + "&6が&9青チーム&6に参加しました"));
-					} else {
-						if ((CTWBlue.getPlayers().size() + CTWRed.getPlayers().size()) % 2 == 0) {
-							CTWRed.addPlayer(player);
-							b(c("&c" + player.getName() + "&6が&c赤チーム&6に参加しました"));
-						} else {
-							CTWBlue.addPlayer(player);
-							b(c("&c" + player.getName() + "&6が&9青チーム&6に参加しました"));
-						}
-					}
-					addGamePlayer(player);
-				}
-			} else if (game.equals(GameType.TDM)) {
-				if (TDMRed.hasPlayer(player) || TDMBlue.hasPlayer(player)) { // 既に参加してたら無効
-					player.sendMessage(c("&c既に参加しています"));
-				} else {
-					if (TDMRed.getPlayers().size() == 0) {
-						TDMRed.addPlayer(player);
-						b(c("&c" + player.getName() + "&6が&c赤チーム&6に参加しました"));
-					} else if (TDMBlue.getPlayers().size() == 0) {
-						TDMBlue.addPlayer(player);
-						b(c("&c" + player.getName() + "&6が&9青チーム&6に参加しました"));
-					} else {
-						if ((TDMBlue.getPlayers().size() + TDMRed.getPlayers().size()) % 2 == 0) {
-							TDMRed.addPlayer(player);
-							b(c("&c" + player.getName() + "&6が&c赤チーム&6に参加しました"));
-						} else {
-							TDMBlue.addPlayer(player);
-							b(c("&c" + player.getName() + "&6が&9青チーム&6に参加しました"));
-						}
-					}
-				}
-			} else if (game.equals(GameType.SW)) {
-
-			}
+			addTeam(player, game, true);
 		} else {
-			GameType a = GameType.CTW;
+			GameType a = GameType.valueOf(main.getConfig().getString("Arena1.Type"));
 			String next = main.getConfig().getString("Arena" + (gamenumber + 1) + ".Type");
-			if (next != null) {
+			if (next != null)
 				a = GameType.valueOf(next);
-			} else {
-				a = GameType.CTW;
-			}
-			if (a.equals(GameType.CTW)) { // 次のゲームがCTWなら
-				if (CTWRed.hasPlayer(player) || CTWBlue.hasPlayer(player)) {
-					player.sendMessage(c("&c既に参加しています"));
-				} else {
-					if ((CTWBlue.getPlayers().size() + CTWRed.getPlayers().size()) % 2 == 0) {
-						CTWRed.addPlayer(player);
-						b(c("&c" + player.getName() + "&6が&c赤チーム&6に参加しました"));
-					} else {
-						CTWBlue.addPlayer(player);
-						b(c("&c" + player.getName() + "&6が&9青チーム&6に参加しました"));
-					}
-				}
-			} else if (a.equals(GameType.TDM)) { // 次のゲームがTDMなら
-				if (TDMRed.hasPlayer(player) || TDMBlue.hasPlayer(player)) {
-					player.sendMessage(c("&c既に参加しています"));
-				} else {
-					if ((TDMBlue.getPlayers().size() + TDMRed.getPlayers().size()) % 2 == 0) {
-						TDMRed.addPlayer(player);
-						b(c("&c" + player.getName() + "&6が&c赤チーム&6に参加しました"));
-					} else {
-						TDMBlue.addPlayer(player);
-						b(c("&c" + player.getName() + "&6が&9青チーム&6に参加しました"));
-					}
-				}
+			if (a.equals(GameType.CTW) || a.equals(GameType.TDM)) {
+				addTeam(player, a, false);
 			} else if (a.equals(GameType.SW)) {
 
 			}
-
 			if (entried.size() >= min_players && !nextcountdown) {
 				nextcountdown = true;
 				new BukkitRunnable() {
@@ -196,9 +120,9 @@ public class GameManager {
 								});
 								if (!isSelectNumber) {
 									gamenumber++;
-									if (main.getConfig().getString("Arena" + gamenumber) == null) {
-										gamenumber = 1;
-									}
+								}
+								if (main.getConfig().getString("Arena" + gamenumber) == null) {
+									gamenumber = 1;
 								}
 								GameStart(gamenumber);
 								nextcountdown = false;
@@ -219,7 +143,6 @@ public class GameManager {
 				}.runTaskTimer(main, 20, 20);
 			}
 		}
-		player.updateInventory();
 	}
 
 	@SuppressWarnings("deprecation")
@@ -228,17 +151,11 @@ public class GameManager {
 		gamenow.add(player);
 		SidebarUtils.SidebarCreate(player);
 		game = GameType.valueOf(f.getString("Arena" + gamenumber + ".Type"));
-		Location redLoc = null;
-		Location blueLoc = null;
-		if (game.equals(GameType.CTW) || game.equals(GameType.TDM)) {
-			redLoc = new Location(Bukkit.getWorld(f.getString("Arena" + gamenumber + ".Red.W")),
-					f.getInt("Arena" + gamenumber + ".Red.X"), f.getInt("Arena" + gamenumber + ".Red.Y"),
-					f.getInt("Arena" + gamenumber + ".Red.Z"));
-			blueLoc = new Location(Bukkit.getWorld(f.getString("Arena" + gamenumber + ".Blue.W")),
-					f.getInt("Arena" + gamenumber + ".Blue.X"), f.getInt("Arena" + gamenumber + ".Blue.Y"),
-					f.getInt("Arena" + gamenumber + ".Blue.Z"));
-		}
+		Location redLoc = getSpawnLocation(gamenumber, "Red");
+		Location blueLoc = getSpawnLocation(gamenumber, "Blue");
 		player.setGameMode(GameMode.SURVIVAL);
+		player.setFallDistance(0.0f);
+		player.getVelocity().zero();
 		if (game.equals(GameType.CTW)) {
 			if (CTWRed.hasPlayer(player)) {
 				player.teleport(redLoc);
@@ -474,6 +391,47 @@ public class GameManager {
 			player.getInventory().setItem(2, bkit);
 		}
 		player.updateInventory();
+	}
+
+	@SuppressWarnings("deprecation")
+	public static void addTeam(Player player, GameType type, boolean addgame) {
+		if (type.equals(GameType.CTW)) {
+			if (CTWRed.hasPlayer(player) || CTWBlue.hasPlayer(player)) { // 既に参加してたら無効
+				player.sendMessage(c("&c既に参加しています"));
+			} else {
+				if ((CTWBlue.getPlayers().size() + CTWRed.getPlayers().size()) % 2 == 0) {
+					CTWRed.addPlayer(player);
+					b(c("&c" + player.getName() + "&6が&c赤チーム&6に参加しました"));
+				} else {
+					CTWBlue.addPlayer(player);
+					b(c("&c" + player.getName() + "&6が&9青チーム&6に参加しました"));
+				}
+				if (addgame)
+					addGamePlayer(player);
+			}
+		} else if (type.equals(GameType.TDM)) {
+			if (TDMRed.hasPlayer(player) || TDMBlue.hasPlayer(player)) {
+				player.sendMessage(c("&c既に参加しています"));
+			} else {
+				if ((TDMBlue.getPlayers().size() + TDMRed.getPlayers().size()) % 2 == 0) {
+					TDMRed.addPlayer(player);
+					b(c("&c" + player.getName() + "&6が&c赤チーム&6に参加しました"));
+				} else {
+					TDMBlue.addPlayer(player);
+					b(c("&c" + player.getName() + "&6が&9青チーム&6に参加しました"));
+				}
+				if (addgame)
+					addGamePlayer(player);
+			}
+		}
+	}
+
+	public static Location getSpawnLocation(int arena, String name) {
+		FileConfiguration f = main.getConfig();
+		Location location = new Location(Bukkit.getWorld(f.getString("Arena" + gamenumber + "." + name + ".W")),
+				f.getInt("Arena" + gamenumber + "." + name + ".X"), f.getInt("Arena" + gamenumber + "." + name + ".Y"),
+				f.getInt("Arena" + gamenumber + "." + name + ".Z"));
+		return location;
 	}
 
 	public static enum GameType {

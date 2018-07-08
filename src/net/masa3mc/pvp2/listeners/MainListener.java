@@ -15,7 +15,6 @@ import org.bukkit.Sound;
 import org.bukkit.block.Block;
 import org.bukkit.block.Chest;
 import org.bukkit.block.Sign;
-import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
@@ -43,7 +42,6 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.scheduler.BukkitRunnable;
-
 import net.masa3mc.pvp2.GameManager;
 import net.masa3mc.pvp2.Main;
 import net.masa3mc.pvp2.GameManager.GameType;
@@ -171,7 +169,7 @@ public class MainListener implements Listener {
 			public void run() {
 				KitUtils.kitMenu(player);
 			}
-		}.runTaskLater(main, 20);
+		}.runTaskLater(main, 10);
 	}
 
 	@SuppressWarnings({ "deprecation" })
@@ -497,20 +495,19 @@ public class MainListener implements Listener {
 	@EventHandler
 	public void Respawn(PlayerRespawnEvent event) {
 		Player player = event.getPlayer();
-		if (game.equals(GameType.CTW) || game.equals(GameType.TDM)) {
-			Location location = null;
-			FileConfiguration f = main.getConfig();
-			if (CTWRed.hasPlayer(player) || TDMRed.hasPlayer(player)) {
-				location = new Location(Bukkit.getWorld(f.getString("Arena" + gamenumber + ".Red.W")),
-						f.getInt("Arena" + gamenumber + ".Red.X"), f.getInt("Arena" + gamenumber + ".Red.Y"),
-						f.getInt("Arena" + gamenumber + ".Red.Z"));
-			} else if (CTWBlue.hasPlayer(player) || TDMBlue.hasPlayer(player)) {
-				location = new Location(Bukkit.getWorld(f.getString("Arena" + gamenumber + ".Blue.W")),
-						f.getInt("Arena" + gamenumber + ".Blue.X"), f.getInt("Arena" + gamenumber + ".Blue.Y"),
-						f.getInt("Arena" + gamenumber + ".Blue.Z"));
+		new BukkitRunnable() {
+			public void run() {
+				if (game.equals(GameType.CTW) || game.equals(GameType.TDM)) {
+					Location location = null;
+					if (CTWRed.hasPlayer(player) || TDMRed.hasPlayer(player)) {
+						location = getSpawnLocation(gamenumber, "Red");
+					} else if (CTWBlue.hasPlayer(player) || TDMBlue.hasPlayer(player)) {
+						location = getSpawnLocation(gamenumber, "Blue");
+					}
+					player.teleport(location.add(0, 1, 0));
+				}
 			}
-			player.teleport(location.add(0, 1.5, 0));
-		}
+		}.runTaskLater(main, 10);
 	}
 
 	private String c(String str) {
