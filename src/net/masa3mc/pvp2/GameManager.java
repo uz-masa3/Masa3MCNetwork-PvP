@@ -79,7 +79,6 @@ public class GameManager {
 		Bukkit.broadcastMessage(str);
 	}
 
-	// サーバー参加時に呼び出される
 	public static void addPlayer(Player player) {
 		entried.add(player);
 		kitInventory(player, true);
@@ -105,6 +104,7 @@ public class GameManager {
 
 			}
 			if (entried.size() >= min_players && !nextcountdown) {
+				// 赤2-青0人の時もゲームが始まってしまうのでここで止める
 				nextcountdown = true;
 				new BukkitRunnable() {
 					int count = 0;

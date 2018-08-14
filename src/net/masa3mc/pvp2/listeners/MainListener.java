@@ -3,8 +3,8 @@ package net.masa3mc.pvp2.listeners;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
-
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Effect;
@@ -56,11 +56,25 @@ import static net.masa3mc.pvp2.GameManager.*;
 public class MainListener implements Listener {
 
 	private List<String> inbase = new ArrayList<String>();
-
+	private HashMap<Player, Long> fastclick = new HashMap<Player, Long>();
 	private Main main = null;
 
 	public MainListener(Main main) {
 		this.main = main;
+	}
+
+	@EventHandler
+	public void fastclick(PlayerInteractEvent event) {
+		if (!event.getAction().name().contains("RIGHT") && ingame) {
+			Player player = event.getPlayer();
+			long time = System.currentTimeMillis();
+			long culc = time - fastclick.getOrDefault(player, 100l);
+			fastclick.put(player, time);
+			if (culc < 50) {// 40ms(0.04s)未満
+				Bukkit.getLogger().warning("Click cancelled: " + player.getName() + " " + culc + "ms(less than 40ms)");
+				event.setCancelled(true);
+			}
+		}
 	}
 
 	@SuppressWarnings("deprecation")
@@ -188,11 +202,19 @@ public class MainListener implements Listener {
 
 	@EventHandler
 	public void damage(EntityDamageEvent event) {
-		if (!ingame) {
-			event.setCancelled(true);
-			if (event.getCause() == DamageCause.VOID) {
-				Player player = (Player) event.getEntity();
-				player.teleport(player.getWorld().getSpawnLocation());
+		if (event.getEntity() instanceof Player) {
+			Player player = (Player) event.getEntity();
+			DamageCause cause = event.getCause();
+			if (ingame) {
+				if (!main.getConfig().getBoolean("Arena" + gamenumber + ".Damage." + cause.name().toLowerCase(),
+						true)) {
+					event.setCancelled(true);
+				}
+			} else {
+				event.setCancelled(true);
+				if (cause.equals(DamageCause.VOID)) {
+					player.teleport(player.getWorld().getSpawnLocation());
+				}
 			}
 		}
 	}
@@ -266,6 +288,11 @@ public class MainListener implements Listener {
 	@EventHandler
 	public void drop(PlayerDropItemEvent event) {
 		if (ingame) {
+			Player player = event.getPlayer();
+			if (KitUtils.isCannotDrop(event.getItemDrop().getItemStack())) {
+				player.playSound(player.getLocation(), Sound.CAT_MEOW, 1, 1);
+				event.getItemDrop().remove();
+			}
 			delentities.add((Entity) event.getItemDrop());
 		} else {
 			event.setCancelled(true);

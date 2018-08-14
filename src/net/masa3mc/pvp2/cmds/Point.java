@@ -18,14 +18,11 @@ public class Point implements CommandExecutor {
 				if (args[0].equalsIgnoreCase("get")) {
 					if (args.length == 2) {
 						if (sender instanceof Player) {
-							sender.sendMessage(
-									color("&5Your Point: " + PointUtils.getPoint(((Player) sender).getUniqueId())));
+							sender.sendMessage(color("&5" + args[1] + "'s Point: "
+									+ PointUtils.getPoint(Bukkit.getOfflinePlayer(args[1]).getUniqueId())));
 						} else {
 							sender.sendMessage(color("&5/point get [player]"));
 						}
-					} else if (args.length == 3) {
-						sender.sendMessage(color("&5" + args[1] + "'s Point: "
-								+ PointUtils.getPoint(Bukkit.getOfflinePlayer(args[1]).getUniqueId())));
 					} else {
 						sender.sendMessage(color("&5/point get [player]"));
 					}

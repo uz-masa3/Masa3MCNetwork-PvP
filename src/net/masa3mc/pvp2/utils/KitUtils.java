@@ -2,7 +2,10 @@ package net.masa3mc.pvp2.utils;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
+
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
@@ -30,15 +33,41 @@ public class KitUtils {
 			YamlConfiguration kitY = YamlConfiguration.loadConfiguration(kitFile(kit));
 			team = team.toLowerCase();
 			for (int i = 0; 35 >= i;) {
-				in.setItem(i, kitY.getItemStack(team + "." + i));
+				in.setItem(i, convCannotDrop(kitY.getItemStack(team + "." + i)));
 				i++;
 			}
-			p.getEquipment().setBoots(kitY.getItemStack(team + ".boots"));
-			p.getEquipment().setLeggings(kitY.getItemStack(team + ".leggings"));
-			p.getEquipment().setChestplate(kitY.getItemStack(team + ".chestplate"));
-			p.getEquipment().setHelmet(kitY.getItemStack(team + ".helmet"));
+			p.getEquipment().setBoots(convCannotDrop(kitY.getItemStack(team + ".boots")));
+			p.getEquipment().setLeggings(convCannotDrop(kitY.getItemStack(team + ".leggings")));
+			p.getEquipment().setChestplate(convCannotDrop(kitY.getItemStack(team + ".chestplate")));
+			p.getEquipment().setHelmet(convCannotDrop(kitY.getItemStack(team + ".helmet")));
 			p.updateInventory();
 		}
+	}
+
+	public static ItemStack convCannotDrop(ItemStack item) {
+		if (item == null) {
+			return null;
+		}
+		ItemMeta meta = item.getItemMeta();
+		List<String> lore = meta.getLore();
+		if (lore == null || !lore.contains(c("&cドロップで削除"))) {
+			List<String> list = new ArrayList<String>();
+			if (lore != null) {
+				list = lore;
+			}
+			list.add(c("&cドロップで削除"));
+			meta.setLore(list);
+			item.setItemMeta(meta);
+		}
+		return item;
+	}
+
+	public static boolean isCannotDrop(ItemStack item) {
+		ItemMeta meta = item.getItemMeta();
+		if (meta == null) {
+			return false;
+		}
+		return meta.getLore().contains(c("&cドロップで削除"));
 	}
 
 	public static void saveKit(Player p, String team, String kit) {
