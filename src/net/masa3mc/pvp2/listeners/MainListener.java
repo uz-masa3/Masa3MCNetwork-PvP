@@ -89,11 +89,11 @@ public class MainListener implements Listener {
 		int z = loc.getBlockZ();
 		Block b = event.getBlock();
 		if (ingame) {
+			event.setCancelled(true);
 			String pos = w + "," + x + "," + y + "," + z;
 			int ticks = canbreaks.getInt("Arena" + gamenumber + ".canbreaks." + pos);
 			if (ticks > 0) {
 				if (!breaking.containsKey(loc)) {
-					event.setCancelled(true);
 					player.getInventory().addItem(new ItemStack(b.getType()));
 					player.updateInventory();
 					breaking.put(loc, b.getType());
@@ -118,11 +118,9 @@ public class MainListener implements Listener {
 					}.runTaskLater(main, ticks);
 				} else {
 					player.sendMessage(c("&c再設置されるまでお待ちください"));
-					event.setCancelled(true);
 				}
 			} else {
 				player.sendMessage(c("&cそこは壊せません"));
-				event.setCancelled(true);
 			}
 		} else {
 			if (player.isOp() && player.getGameMode().equals(GameMode.CREATIVE)) {
@@ -206,13 +204,19 @@ public class MainListener implements Listener {
 			Player player = (Player) event.getEntity();
 			DamageCause cause = event.getCause();
 			if (ingame) {
+				if (!entried.contains(player)) {
+					event.setCancelled(true);
+					if (cause.equals(DamageCause.VOID)) {
+						player.teleport(player.getWorld().getSpawnLocation());
+					}
+				}
 				if (!main.getConfig().getBoolean("Arena" + gamenumber + ".Damage." + cause.name().toLowerCase(),
 						true)) {
 					event.setCancelled(true);
 				}
 			} else {
-				event.setCancelled(true);
 				if (cause.equals(DamageCause.VOID)) {
+					event.setCancelled(true);
 					player.teleport(player.getWorld().getSpawnLocation());
 				}
 			}

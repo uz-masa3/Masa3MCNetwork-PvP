@@ -266,7 +266,6 @@ public class GameManager {
 	// 終わりのカウント || 羊毛設置で呼び出す
 	public static void GameEnd(GameTeam team) {
 		if (ingame) {
-			ingame = false;
 			blueFlagPlayer.clear();
 			redFlagPlayer.clear();
 			ChestUtils.restoreAllChests();
@@ -359,6 +358,7 @@ public class GameManager {
 				players.playSound(players.getLocation(), Sound.FIREWORK_LAUNCH, 1, 0);
 			}
 			players.getActivePotionEffects().forEach(potions -> players.removePotionEffect(potions.getType()));
+			players.setBedSpawnLocation(players.getWorld().getSpawnLocation(), true);
 		});
 	}
 

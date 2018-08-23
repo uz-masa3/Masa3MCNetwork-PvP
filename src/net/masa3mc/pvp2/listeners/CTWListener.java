@@ -84,10 +84,6 @@ public class CTWListener implements Listener {
 					}
 				}
 			}
-		} else {
-			if (!player.getGameMode().equals(GameMode.CREATIVE) || !player.isOp()) {
-				event.setCancelled(true);
-			}
 		}
 	}
 
