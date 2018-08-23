@@ -7,11 +7,9 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
 
-import net.masa3mc.pvp2.cmds.GameEnd;
-import net.masa3mc.pvp2.cmds.GameStart;
+import net.masa3mc.pvp2.cmds.Game;
 import net.masa3mc.pvp2.cmds.KitMenu;
 import net.masa3mc.pvp2.cmds.LoadKit;
-import net.masa3mc.pvp2.cmds.NextGame;
 import net.masa3mc.pvp2.cmds.Point;
 import net.masa3mc.pvp2.cmds.SetKit;
 import net.masa3mc.pvp2.cmds.Setting;
@@ -36,14 +34,12 @@ public class Main extends JavaPlugin {
 		pm.registerEvents(new TDMListener(), this);
 		pm.registerEvents(new SWListener(this), this);
 
-		getCommand("gamestart").setExecutor(new GameStart());
-		getCommand("gameend").setExecutor(new GameEnd());
+		getCommand("game").setExecutor(new Game());
 		getCommand("kitmenu").setExecutor(new KitMenu());
 		getCommand("loadkit").setExecutor(new LoadKit());
 		getCommand("setkit").setExecutor(new SetKit());
 		getCommand("point").setExecutor(new Point());
 		getCommand("setting").setExecutor(new Setting());
-		getCommand("nextgame").setExecutor(new NextGame());
 
 		Scoreboard board = Bukkit.getScoreboardManager().getMainScoreboard();
 		if (board.getObjective("Kills") == null)
@@ -117,7 +113,6 @@ public class Main extends JavaPlugin {
 	}
 
 	// TODO
-	// リログでチームの数が1対3とかになるのを改善
 	// Skywarsの追加
 
 }

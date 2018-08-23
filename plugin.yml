@@ -1,5 +1,5 @@
 ﻿name: masa3MC
-version: 1.7.8-2018.08.04
+version: 1.8.0-2018.08.022
 main: net.masa3mc.pvp2.Main
 author: uz_masa3
 commands:
@@ -12,21 +12,15 @@ commands:
    loadkit:
       description: load kit.
       permission: masa3MC.command.loadkit
-   gamestart:
-      description: start game.
-      permission: masa3MC.command.gamestart
-   gameend:
-      description: end game.
-      permission: masa3MC.command.gameend
+   game:
+      description: game command.
+      permission: masa3MC.command.game
    point:
       description: show user point.
       permission: masa3MC.command.point
    setting:
       description: Setings
       permission: masa3MC.command.setting
-   nextgame:
-      description: nextGame
-      permission: masa3MC.command.nextgame
 permissions:
   masa3MC.command.kitmenu:
     default: true
@@ -34,14 +28,11 @@ permissions:
     default: op
   masa3MC.command.loadkit:
     default: op
-  masa3MC.command.gamestart:
-    default: op
-  masa3MC.command.gameend:
+  masa3MC.command.game:
     default: op
   masa3MC.command.point:
     default: true
   masa3MC.command.setting:
     default: op
-  masa3MC.command.nextgame:
-    default: op
+
 

@@ -71,14 +71,6 @@ public class GameManager {
 
 	private static final int min_players = 2;
 
-	private static String c(String str) {
-		return ChatColor.translateAlternateColorCodes('&', str);
-	}
-
-	private static void b(String str) {
-		Bukkit.broadcastMessage(str);
-	}
-
 	public static void addPlayer(Player player) {
 		entried.add(player);
 		kitInventory(player, true);
@@ -95,6 +87,7 @@ public class GameManager {
 			addTeam(player, game, true);
 		} else {
 			GameType a = GameType.valueOf(main.getConfig().getString("Arena1.Type"));
+			// isSelectNumber=trueの時おかしくなりそう
 			String next = main.getConfig().getString("Arena" + (gamenumber + 1) + ".Type");
 			if (next != null)
 				a = GameType.valueOf(next);
@@ -113,7 +106,7 @@ public class GameManager {
 						int sec = 16;
 						if (entried.size() >= min_players) {
 							count++;
-							if (count == sec) {
+							if (count >= sec) {
 								entried.forEach(players -> {
 									players.closeInventory();
 									SidebarUtils.SidebarCreate(players);
@@ -259,7 +252,6 @@ public class GameManager {
 							}
 							TDMRed_Score = 0;
 							TDMBlue_Score = 0;
-
 							cancel();
 						}
 					}
@@ -399,7 +391,7 @@ public class GameManager {
 			if (CTWRed.hasPlayer(player) || CTWBlue.hasPlayer(player)) { // 既に参加してたら無効
 				player.sendMessage(c("&c既に参加しています"));
 			} else {
-				if ((CTWBlue.getPlayers().size() + CTWRed.getPlayers().size()) % 2 == 0) {
+				if (CTWRed.getSize() <= CTWBlue.getSize()) {
 					CTWRed.addPlayer(player);
 					b(c("&c" + player.getName() + "&6が&c赤チーム&6に参加しました"));
 				} else {
@@ -413,7 +405,7 @@ public class GameManager {
 			if (TDMRed.hasPlayer(player) || TDMBlue.hasPlayer(player)) {
 				player.sendMessage(c("&c既に参加しています"));
 			} else {
-				if ((TDMBlue.getPlayers().size() + TDMRed.getPlayers().size()) % 2 == 0) {
+				if (TDMRed.getSize() <= TDMBlue.getSize()) {
 					TDMRed.addPlayer(player);
 					b(c("&c" + player.getName() + "&6が&c赤チーム&6に参加しました"));
 				} else {
@@ -423,6 +415,8 @@ public class GameManager {
 				if (addgame)
 					addGamePlayer(player);
 			}
+		} else if (type.equals(GameType.SW)) {
+
 		}
 	}
 
@@ -432,6 +426,14 @@ public class GameManager {
 				f.getInt("Arena" + gamenumber + "." + name + ".X"), f.getInt("Arena" + gamenumber + "." + name + ".Y"),
 				f.getInt("Arena" + gamenumber + "." + name + ".Z"));
 		return location;
+	}
+
+	private static String c(String str) {
+		return ChatColor.translateAlternateColorCodes('&', str);
+	}
+
+	private static void b(String str) {
+		Bukkit.broadcastMessage(str);
 	}
 
 	public static enum GameType {
