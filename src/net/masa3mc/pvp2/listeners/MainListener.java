@@ -215,8 +215,8 @@ public class MainListener implements Listener {
 					event.setCancelled(true);
 				}
 			} else {
+				event.setCancelled(true);
 				if (cause.equals(DamageCause.VOID)) {
-					event.setCancelled(true);
 					player.teleport(player.getWorld().getSpawnLocation());
 				}
 			}

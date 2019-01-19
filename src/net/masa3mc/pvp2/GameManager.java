@@ -66,7 +66,6 @@ public class GameManager {
 	public static final Team TDMRed = Main.team("TDM_red");
 	public static final Team TDMBlue = Main.team("TDM_blue");
 
-	// addPlayerが2回以上呼ばれた時にtrue
 	public static boolean nextcountdown = false;
 
 	private static final int min_players = 2;
@@ -268,7 +267,6 @@ public class GameManager {
 		if (ingame) {
 			blueFlagPlayer.clear();
 			redFlagPlayer.clear();
-			ChestUtils.restoreAllChests();
 			breaking.forEach((l, b) -> {
 				l.getBlock().setType(b);
 			});
@@ -317,7 +315,7 @@ public class GameManager {
 				count++;
 				if (count != 16 && (16 - count <= 10)) {
 					b(c("&7次のゲーム準備まで残り&6" + (16 - count) + "&7秒"));
-				} else if (count == 16) {
+				} else if (count >= 16) {
 					SidebarUtils.SidebarUnregist();
 					entried.forEach(players -> {
 						players.teleport(players.getWorld().getSpawnLocation());
