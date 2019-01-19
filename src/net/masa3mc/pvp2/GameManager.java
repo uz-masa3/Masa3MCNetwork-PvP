@@ -316,6 +316,7 @@ public class GameManager {
 				if (count != 16 && (16 - count <= 10)) {
 					b(c("&7次のゲーム準備まで残り&6" + (16 - count) + "&7秒"));
 				} else if (count >= 16) {
+					RollBack.load("Arena" + gamenumber + ".yml");
 					SidebarUtils.SidebarUnregist();
 					entried.forEach(players -> {
 						players.teleport(players.getWorld().getSpawnLocation());

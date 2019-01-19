@@ -77,6 +77,9 @@ public class MainListener implements Listener {
 		}
 	}
 
+	// ingameならオールキャンセル->再設置ブロック
+	// !ingameでOP&Creativeなら破壊可能
+	// 矢を持ってチェスト破壊でチェスト登録
 	@SuppressWarnings("deprecation")
 	@EventHandler
 	public void bbreak(BlockBreakEvent event) {

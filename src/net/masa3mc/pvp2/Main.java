@@ -65,6 +65,7 @@ public class Main extends JavaPlugin {
 			GameManager.kitInventory(players, true);
 		});
 		setupEconomy();
+		getLogger().info("ReloadData: " + RollBack.loadData());
 	}
 
 	@SuppressWarnings("deprecation")
