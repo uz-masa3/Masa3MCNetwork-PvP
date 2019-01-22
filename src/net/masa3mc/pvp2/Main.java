@@ -13,6 +13,7 @@ import net.masa3mc.pvp2.cmds.LoadKit;
 import net.masa3mc.pvp2.cmds.Point;
 import net.masa3mc.pvp2.cmds.SetKit;
 import net.masa3mc.pvp2.cmds.Setting;
+import net.masa3mc.pvp2.listeners.BlockListener;
 import net.masa3mc.pvp2.listeners.CTWListener;
 import net.masa3mc.pvp2.listeners.MainListener;
 import net.masa3mc.pvp2.listeners.SWListener;
@@ -29,8 +30,9 @@ public class Main extends JavaPlugin {
 		main = this;
 		saveDefaultConfig();
 		PluginManager pm = Bukkit.getPluginManager();
+		pm.registerEvents(new BlockListener(), this);
 		pm.registerEvents(new MainListener(this), this);
-		pm.registerEvents(new CTWListener(this), this);
+		pm.registerEvents(new CTWListener(), this);
 		pm.registerEvents(new TDMListener(), this);
 		pm.registerEvents(new SWListener(this), this);
 

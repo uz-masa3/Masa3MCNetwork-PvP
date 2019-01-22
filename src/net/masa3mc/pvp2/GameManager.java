@@ -1,5 +1,8 @@
 package net.masa3mc.pvp2;
 
+import static net.masa3mc.pvp2.GameManager.bases;
+import static net.masa3mc.pvp2.GameManager.gamenumber;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -417,6 +420,15 @@ public class GameManager {
 		} else if (type.equals(GameType.SW)) {
 
 		}
+	}
+
+	public static boolean isEnemyBase(GameTeam team, int gamenum, String w, int x, int y, int z) {
+		return isEnemyBase(team, gamenum, w + "," + x + "," + y + "," + z);
+	}
+
+	public static boolean isEnemyBase(GameTeam team, int gamenum, String l) {
+		List<String> base = bases.getStringList("Arena" + gamenum + ".base." + team.name().toLowerCase());
+		return base.contains(l);
 	}
 
 	public static Location getSpawnLocation(int arena, String name) {

@@ -7,13 +7,10 @@ import java.util.HashMap;
 import java.util.List;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
-import org.bukkit.Effect;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
-import org.bukkit.block.Block;
-import org.bukkit.block.Chest;
 import org.bukkit.block.Sign;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Entity;
@@ -22,7 +19,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
-import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.SignChangeEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.FoodLevelChangeEvent;
@@ -31,7 +27,6 @@ import org.bukkit.event.entity.ProjectileHitEvent;
 import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
 import org.bukkit.event.entity.EntitySpawnEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.event.player.PlayerBucketFillEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
@@ -45,7 +40,6 @@ import org.bukkit.scheduler.BukkitRunnable;
 import net.masa3mc.pvp2.GameManager;
 import net.masa3mc.pvp2.Main;
 import net.masa3mc.pvp2.GameManager.GameType;
-import net.masa3mc.pvp2.utils.ChestUtils;
 import net.masa3mc.pvp2.utils.KitUtils;
 import net.masa3mc.pvp2.utils.PlayerUtils;
 import net.masa3mc.pvp2.utils.PointUtils;
@@ -73,91 +67,6 @@ public class MainListener implements Listener {
 			if (culc < 50) {// 40ms(0.04s)未満
 				Bukkit.getLogger().warning("Click cancelled: " + player.getName() + " " + culc + "ms(less than 40ms)");
 				event.setCancelled(true);
-			}
-		}
-	}
-
-	// ingameならオールキャンセル->再設置ブロック
-	// !ingameでOP&Creativeなら破壊可能
-	// 矢を持ってチェスト破壊でチェスト登録
-	@SuppressWarnings("deprecation")
-	@EventHandler
-	public void bbreak(BlockBreakEvent event) {
-		Player player = event.getPlayer();
-
-		Location loc = event.getBlock().getLocation();
-		String w = loc.getWorld().getName();
-		int x = loc.getBlockX();
-		int y = loc.getBlockY();
-		int z = loc.getBlockZ();
-		Block b = event.getBlock();
-		if (ingame) {
-			event.setCancelled(true);
-			String pos = w + "," + x + "," + y + "," + z;
-			int ticks = canbreaks.getInt("Arena" + gamenumber + ".canbreaks." + pos);
-			if (ticks > 0) {
-				if (!breaking.containsKey(loc)) {
-					player.getInventory().addItem(new ItemStack(b.getType()));
-					player.updateInventory();
-					breaking.put(loc, b.getType());
-					if (ticks >= 20) {
-						new BukkitRunnable() {
-							public void run() {
-								loc.getWorld().playEffect(loc, Effect.STEP_SOUND, Material.OBSIDIAN.getId());
-								loc.getWorld().playSound(loc, Sound.DIG_STONE, 1, 1);
-								b.setType(Material.OBSIDIAN);
-								cancel();
-							}
-						}.runTaskLater(main, 3);
-					}
-					new BukkitRunnable() {
-						public void run() {
-							b.setType(breaking.get(loc));
-							loc.getWorld().playEffect(loc, Effect.STEP_SOUND, b.getTypeId());
-							loc.getWorld().playSound(loc, Sound.DIG_STONE, 1, 1);
-							breaking.remove(loc);
-							cancel();
-						}
-					}.runTaskLater(main, ticks);
-				} else {
-					player.sendMessage(c("&c再設置されるまでお待ちください"));
-				}
-			} else {
-				player.sendMessage(c("&cそこは壊せません"));
-			}
-		} else {
-			if (player.isOp() && player.getGameMode().equals(GameMode.CREATIVE)) {
-				if (player.getItemInHand() == null) {
-					return;
-				}
-				if (player.getItemInHand().getType().equals(Material.ARROW)) {
-					Block block = event.getBlock();
-					event.setCancelled(true);
-					if (block.getType().equals(Material.CHEST)) {
-						if (ChestUtils.saveChest((Chest) block.getState())) {
-							player.sendMessage(c("&6チェストの登録が正常に完了しました"));
-						} else {
-							player.sendMessage(c("&cチェストの登録中にエラーが発生しました"));
-						}
-					} else {
-						player.sendMessage(c("&cチェスト以外は登録できません"));
-					}
-				}
-			} else {
-				event.setCancelled(true);
-			}
-		}
-	}
-
-	@EventHandler
-	public void bucketfill(PlayerBucketFillEvent event) {
-		event.setCancelled(true);
-		Block b = event.getBlockClicked();
-		if (b != null) {
-			if (b.getType().equals(Material.WATER)) {
-				event.getPlayer().sendMessage(c("&c水を汲むことはできません"));
-			} else if (b.getType().equals(Material.LAVA)) {
-				event.getPlayer().sendMessage(c("&c溶岩を汲むことはできません"));
 			}
 		}
 	}
@@ -421,10 +330,9 @@ public class MainListener implements Listener {
 		Player player = event.getPlayer();
 		if (ingame) {
 			Location l = player.getLocation();
-			String pos = l.getWorld().getName() + "," + l.getBlockX() + "," + l.getBlockY() + "," + l.getBlockZ();
 			if (CTWRed.hasPlayer(player) || TDMRed.hasPlayer(player)) {
-				List<String> bluebase = bases.getStringList("Arena" + gamenumber + ".base.blue");
-				if (bluebase.contains(pos)) {
+				if (isEnemyBase(GameTeam.BLUE, gamenumber, l.getWorld().getName(), l.getBlockX(), l.getBlockY(),
+						l.getBlockZ())) {
 					player.teleport(l);
 					if (!inbase.contains(player.getName())) {
 						inbase.add(player.getName());
@@ -434,8 +342,8 @@ public class MainListener implements Listener {
 					inbase.remove(player.getName());
 				}
 			} else if (CTWBlue.hasPlayer(player) || TDMBlue.hasPlayer(player)) {
-				List<String> redbase = bases.getStringList("Arena" + gamenumber + ".base.red");
-				if (redbase.contains(pos)) {
+				if (isEnemyBase(GameTeam.RED, gamenumber, l.getWorld().getName(), l.getBlockX(), l.getBlockY(),
+						l.getBlockZ())) {
 					player.teleport(l);
 					if (!inbase.contains(player.getName())) {
 						inbase.add(player.getName());

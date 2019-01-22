@@ -18,7 +18,6 @@ import com.sk89q.worldedit.bukkit.WorldEditPlugin;
 import com.sk89q.worldedit.bukkit.selections.CuboidSelection;
 import com.sk89q.worldedit.bukkit.selections.Selection;
 
-import net.masa3mc.pvp2.GameManager;
 import net.masa3mc.pvp2.Main;
 
 public class Setting implements CommandExecutor {
@@ -75,54 +74,6 @@ public class Setting implements CommandExecutor {
 								}
 							} catch (IOException e) {
 								sender.sendMessage(c("&c保存中にエラーが発生しました"));
-							}
-						} else {
-							sender.sendMessage(c("&cアリーナが存在しません"));
-						}
-					} else {
-						sender.sendMessage(c("&61. //pos1 and //pos2"));
-						sender.sendMessage(c("&62. /setting teambase [arena] [team]"));
-					}
-				} else if (args[0].equalsIgnoreCase("canbreak")) {
-					WorldEditPlugin worldEditPlugin = (WorldEditPlugin) Bukkit.getPluginManager()
-							.getPlugin("WorldEdit");
-					if (worldEditPlugin == null) {
-						sender.sendMessage(c("&cWorldEditが入っていません"));
-						return true;
-					}
-					if (args.length == 1) {
-						sender.sendMessage(c("&61. //pos1 and //pos2"));
-						sender.sendMessage(c("&62. /setting canbreak [arena] [ticks]"));
-					} else if (args.length == 3) {
-						if (main.getConfig().getString("Arena" + args[1]) != null) {
-							try {
-								int ticks = Integer.parseInt(args[2]);
-								YamlConfiguration yml = YamlConfiguration
-										.loadConfiguration(new File(main.getDataFolder() + "/canbreaks.yml"));
-								Selection selection = worldEditPlugin.getSelection(player);
-								if (selection instanceof CuboidSelection) {
-									Vector min = selection.getNativeMinimumPoint();
-									Vector max = selection.getNativeMaximumPoint();
-
-									for (int x = min.getBlockX(); x <= max.getBlockX(); x++) {
-										for (int y = min.getBlockY(); y <= max.getBlockY(); y++) {
-											for (int z = min.getBlockZ(); z <= max.getBlockZ(); z++) {
-												String pos = player.getWorld().getName() + "," + x + "," + y + "," + z;
-												yml.set("Arena" + args[1] + ".canbreaks." + pos, ticks);
-											}
-										}
-									}
-
-									yml.save(new File(main.getDataFolder() + "/canbreaks.yml"));
-									GameManager.canbreaks = yml;
-									sender.sendMessage(c("&6登録が完了しました"));
-								} else {
-									sender.sendMessage(c("&cWorldEditで範囲を指定してください"));
-								}
-							} catch (IOException e) {
-								sender.sendMessage(c("&c保存中にエラーが発生しました"));
-							} catch (NumberFormatException e) {
-								sender.sendMessage(c("&c[ticks]には数字しか入れれません"));
 							}
 						} else {
 							sender.sendMessage(c("&cアリーナが存在しません"));
@@ -197,7 +148,6 @@ public class Setting implements CommandExecutor {
 	private void allsettings(CommandSender sender) {
 		sender.sendMessage(c("&7--------&cAll Settings&7--------"));
 		sender.sendMessage(c("&6 /setting teambase [arena] [team]"));
-		sender.sendMessage(c("&6 /setting canbreak [arena] [ticks]"));
 		sender.sendMessage(c("&6 /setting object [arena] [team]"));
 	}
 
