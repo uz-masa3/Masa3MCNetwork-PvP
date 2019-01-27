@@ -3,7 +3,6 @@ package net.masa3mc.pvp2.listeners;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -50,25 +49,10 @@ import static net.masa3mc.pvp2.GameManager.*;
 public class MainListener implements Listener {
 
 	private List<String> inbase = new ArrayList<String>();
-	private HashMap<Player, Long> fastclick = new HashMap<Player, Long>();
 	private Main main = null;
 
 	public MainListener(Main main) {
 		this.main = main;
-	}
-
-	@EventHandler
-	public void fastclick(PlayerInteractEvent event) {
-		if (!event.getAction().name().contains("RIGHT") && ingame) {
-			Player player = event.getPlayer();
-			long time = System.currentTimeMillis();
-			long culc = time - fastclick.getOrDefault(player, 100l);
-			fastclick.put(player, time);
-			if (culc < 50) {// 40ms(0.04s)未満
-				Bukkit.getLogger().warning("Click cancelled: " + player.getName() + " " + culc + "ms(less than 40ms)");
-				event.setCancelled(true);
-			}
-		}
 	}
 
 	@SuppressWarnings("deprecation")
@@ -176,11 +160,14 @@ public class MainListener implements Listener {
 		if (event.getClickedBlock() != null) {
 			Material type = event.getClickedBlock().getType();
 			if (type.equals(Material.CHEST) || type.equals(Material.FURNACE)) {
-				Location l = event.getClickedBlock().getLocation();
-				String pos = l.getWorld().getName() + "," + l.getBlockX() + "," + l.getBlockY() + "," + l.getBlockZ();
-				if (chests.getString(pos) == null) {
-					player.sendMessage(c("&cその" + (type.name().equals("CHEST") ? "チェスト" : "かまど") + "は開けれません"));
-					event.setCancelled(true);
+				if (ingame) {
+					Location l = event.getClickedBlock().getLocation();
+					String pos = l.getWorld().getName() + "," + l.getBlockX() + "," + l.getBlockY() + ","
+							+ l.getBlockZ();
+					if (chests.getString(pos) == null) {
+						player.sendMessage(c("&cその" + (type.name().equals("CHEST") ? "チェスト" : "かまど") + "は開けれません"));
+						event.setCancelled(true);
+					}
 				}
 			} else if (type.equals(Material.WALL_SIGN) || type.equals(Material.SIGN_POST)) {
 				Sign sign = (Sign) event.getClickedBlock().getState();
@@ -367,17 +354,18 @@ public class MainListener implements Listener {
 					kill.getInventory().addItem(new ItemStack(Material.valueOf(m)));
 				}
 			}
-			if (kill != p) {
-				new Thread() {
-					public void run() {
-						EconomyResponse er = Main.getEconomy().depositPlayer(p.getKiller(), 30.0);
-						if (er.transactionSuccess()) {
-							PlayerUtils.sendActionBarMessage(p.getKiller(), c("&a30Msを手に入れた"));
-						}
-						PointUtils.setPoint(kill.getUniqueId(), PointUtils.getPoint(kill.getUniqueId()) + 1);
-					}
-				}.start();
-			}
+			// if (kill != p) {
+			// new Thread() {
+			// public void run() {
+			// EconomyResponse er = Main.getEconomy().depositPlayer(p.getKiller(), 30.0);
+			// if (er.transactionSuccess()) {
+			// PlayerUtils.sendActionBarMessage(p.getKiller(), c("&a30Msを手に入れた"));
+			// }
+			// PointUtils.setPoint(kill.getUniqueId(),
+			// PointUtils.getPoint(kill.getUniqueId()) + 1);
+			// }
+			// }.start();
+			// }
 			event.setDeathMessage(c("&7" + p.getName() + "は" + kill.getName() + "に殺害された"));
 		} else if (cause.equals(DamageCause.VOID)) {
 			event.setDeathMessage(c("&7" + p.getName() + "は奈落に落ちた"));
@@ -390,26 +378,27 @@ public class MainListener implements Listener {
 		} else if (cause.equals(DamageCause.POISON)) {
 			event.setDeathMessage(c("&7" + p.getName() + "は毒にまみれた"));
 		}
-		new Thread() {
-			public void run() {
-				EconomyResponse er = Main.getEconomy().depositPlayer(p, -15.0);
-				if (er.transactionSuccess()) {
-					PlayerUtils.sendActionBarMessage(p, c("&c15Msを失った"));
-				}
-			}
-		}.start();
+		// new Thread() {
+		// public void run() {
+		// TODO
+		// EconomyResponse er = Main.getEconomy().depositPlayer(p, -15.0);
+		// if (er.transactionSuccess()) {
+		// PlayerUtils.sendActionBarMessage(p, c("&c15Msを失った"));
+		// }
+		// }
+		// }.start();
 		if (redFlagPlayer.contains(p)) {
 			b(c("&7" + p.getName() + "が&c赤チーム&7の羊毛を落としました"));
 			redFlagPlayer.remove(p);
 			if (redFlagPlayer.size() == 0) {
-				SidebarUtils.SidebarFlag("blue", false);
+				SidebarUtils.SidebarFlag("blue", 1);
 			}
 		}
 		if (blueFlagPlayer.contains(p)) {
 			b(c("&7" + p.getName() + "が&9青チーム&7の羊毛を落としました"));
 			blueFlagPlayer.remove(p);
 			if (blueFlagPlayer.size() == 0) {
-				SidebarUtils.SidebarFlag("red", false);
+				SidebarUtils.SidebarFlag("red", 1);
 			}
 		}
 		new BukkitRunnable() {

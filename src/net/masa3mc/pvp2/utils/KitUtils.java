@@ -64,7 +64,7 @@ public class KitUtils {
 
 	public static boolean isCannotDrop(ItemStack item) {
 		ItemMeta meta = item.getItemMeta();
-		if (meta == null) {
+		if (meta == null || meta.getLore() == null) {
 			return false;
 		}
 		return meta.getLore().contains(c("&cドロップで削除"));

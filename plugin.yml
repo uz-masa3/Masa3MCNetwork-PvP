@@ -1,17 +1,11 @@
 ﻿name: masa3MC
-version: 1.8.1-RBCustom
+version: 1.8.1-Dev
 main: net.masa3mc.pvp2.Main
 author: uz_masa3
 commands:
-   kitmenu:
-      description: open kit menu.
-      permission: masa3MC.command.kitmenu
-   setkit:
-      description: save kit.
-      permission: masa3MC.command.setkit
-   loadkit:
-      description: load kit.
-      permission: masa3MC.command.loadkit
+   kit:
+      description: kit command.
+      permission: masa3MC.command.kit
    game:
       description: game command.
       permission: masa3MC.command.game
@@ -22,16 +16,12 @@ commands:
       description: Setings
       permission: masa3MC.command.setting
 permissions:
-  masa3MC.command.kitmenu:
+  masa3MC.command.kit:
     default: true
-  masa3MC.command.setkit:
-    default: op
-  masa3MC.command.loadkit:
-    default: op
-  masa3MC.command.game:
-    default: op
   masa3MC.command.point:
     default: true
+  masa3MC.command.game:
+    default: op
   masa3MC.command.setting:
     default: op
 

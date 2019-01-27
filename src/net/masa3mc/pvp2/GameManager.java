@@ -1,8 +1,5 @@
 package net.masa3mc.pvp2;
 
-import static net.masa3mc.pvp2.GameManager.bases;
-import static net.masa3mc.pvp2.GameManager.gamenumber;
-
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -71,7 +68,7 @@ public class GameManager {
 
 	public static boolean nextcountdown = false;
 
-	private static final int min_players = 2;
+	private static final int min_players = 1; // TODO
 
 	public static void addPlayer(Player player) {
 		entried.add(player);
@@ -105,7 +102,7 @@ public class GameManager {
 					int count = 0;
 
 					public void run() {
-						int sec = 16;
+						int sec = 1;// TODO
 						if (entried.size() >= min_players) {
 							count++;
 							if (count >= sec) {
@@ -197,6 +194,7 @@ public class GameManager {
 		ingame = true;
 		game = GameType.valueOf(main.getConfig().getString("Arena" + gamenumber + ".Type"));
 		FileConfiguration f = main.getConfig();
+		RollBack.load("Arena" + gamenumber + ".yml");
 		ChestUtils.restoreAllChests();
 		canbreaks = YamlConfiguration.loadConfiguration(new File(main.getDataFolder() + "/canbreaks.yml"));
 		bases = YamlConfiguration.loadConfiguration(new File(main.getDataFolder() + "/bases.yml"));

@@ -26,14 +26,14 @@ public class Setting implements CommandExecutor {
 		Main main = Main.getInstance();
 
 		if (cmd.getName().equalsIgnoreCase("setting")) {
-			if (!(sender instanceof Player)) {
-				sender.sendMessage(c("&cプレイヤー以外は実行できません"));
-			}
-			Player player = (Player) sender;
 			if (args.length == 0) {
 				allsettings(sender);
 			} else {
 				if (args[0].equalsIgnoreCase("teambase")) {
+					if (!(sender instanceof Player)) {
+						sender.sendMessage(c("&cプレイヤー以外は実行できません"));
+					}
+					Player player = (Player) sender;
 					WorldEditPlugin worldEditPlugin = (WorldEditPlugin) Bukkit.getPluginManager()
 							.getPlugin("WorldEdit");
 					if (worldEditPlugin == null) {
@@ -83,7 +83,7 @@ public class Setting implements CommandExecutor {
 						sender.sendMessage(c("&62. /setting teambase [arena] [team]"));
 					}
 				} else if (args[0].equalsIgnoreCase("object")) {
-					if (args.length == 6) {
+					if (args.length == 7) {
 						String team = args[2];
 						if (main.getConfig().getString("Arena" + args[1]) != null) {
 							if (!(team.equalsIgnoreCase("red") || team.equalsIgnoreCase("blue"))) {
@@ -93,10 +93,17 @@ public class Setting implements CommandExecutor {
 							try {
 								FileConfiguration conf = main.getConfig();
 								String str = "Arena" + args[1] + ".object." + team;
-								conf.set(str + ".x", iparse(args[3]));
-								conf.set(str + ".y", iparse(args[4]));
-								conf.set(str + ".z", iparse(args[5]));
+								String p = args[3] + "," + iparse(args[4]) + "," + iparse(args[5]) + ","
+										+ iparse(args[6]);
+								List<String> lists = conf.getStringList(str);
+								if (lists.contains(p)) {
+									sender.sendMessage(c("&c既に登録されている座標です。"));
+									return true;
+								}
+								lists.add(p);
+								conf.set(str, lists);
 								conf.save(new File(main.getDataFolder() + "/config.yml"));
+								sender.sendMessage(c("&6座標を登録しました。"));
 							} catch (NumberFormatException e) {
 								sender.sendMessage(c("&cx/y/zには数字を入れてください"));
 							} catch (IOException e) {
@@ -106,28 +113,40 @@ public class Setting implements CommandExecutor {
 							sender.sendMessage(c("&cアリーナが存在しません"));
 						}
 					} else {
-						sender.sendMessage(c("&62. /setting object [arena] [team] [x] [y] [z]"));
+						sender.sendMessage(c("&6/setting object [arena] [team] [world] [x] [y] [z]"));
 					}
-				} else if (args[0].equalsIgnoreCase("type")) {
-					if (main.getConfig().getString("Arena" + args[1]) != null) {
-						if (args.length == 3) {
-							String type = args[2].toUpperCase();
-							if (!(type.equals("CTW") || type.equals("TDM"))) {
-								sender.sendMessage(c("&cタイプはCTW/TDMのみ指定可能です"));
+				} else if (args[0].equalsIgnoreCase("put")) {
+					if (args.length == 7) {
+						String team = args[2];
+						if (main.getConfig().getString("Arena" + args[1]) != null) {
+							if (!(team.equalsIgnoreCase("red") || team.equalsIgnoreCase("blue"))) {
+								sender.sendMessage(c("&cチームはred/blueのみ指定可能です"));
 								return true;
 							}
 							try {
 								FileConfiguration conf = main.getConfig();
-								conf.set("Arena" + args[1] + ".Type", args[2]);
+								String str = "Arena" + args[1] + ".put." + team;
+								String p = args[3] + "," + iparse(args[4]) + "," + iparse(args[5]) + ","
+										+ iparse(args[6]);
+								List<String> lists = conf.getStringList(str);
+								if (lists.contains(p)) {
+									sender.sendMessage(c("&c既に登録されている座標です。"));
+									return true;
+								}
+								lists.add(p);
+								conf.set(str, lists);
 								conf.save(new File(main.getDataFolder() + "/config.yml"));
+								sender.sendMessage(c("&6座標を登録しました。"));
+							} catch (NumberFormatException e) {
+								sender.sendMessage(c("&cx/y/zには数字を入れてください"));
 							} catch (IOException e) {
 								sender.sendMessage(c("&c保存中にエラーが発生しました"));
 							}
 						} else {
-							sender.sendMessage(c("&62. /setting type [arena] [type]"));
+							sender.sendMessage(c("&cアリーナが存在しません"));
 						}
 					} else {
-						sender.sendMessage(c("&cアリーナが存在しません"));
+						sender.sendMessage(c("&6/setting put [arena] [team] [world] [x] [y] [z]"));
 					}
 				} else {
 					allsettings(sender);
@@ -148,7 +167,8 @@ public class Setting implements CommandExecutor {
 	private void allsettings(CommandSender sender) {
 		sender.sendMessage(c("&7--------&cAll Settings&7--------"));
 		sender.sendMessage(c("&6 /setting teambase [arena] [team]"));
-		sender.sendMessage(c("&6 /setting object [arena] [team]"));
+		sender.sendMessage(c("&6 /setting object [arena] [team] [world] [x] [y] [z]"));
+		sender.sendMessage(c("&6 /setting put [arena] [team] [world] [x] [y] [z]"));
 	}
 
 }
