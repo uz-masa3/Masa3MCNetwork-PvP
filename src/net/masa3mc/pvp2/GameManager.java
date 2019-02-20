@@ -48,6 +48,9 @@ public class GameManager {
 	public static ArrayList<Player> blueFlagPlayer = new ArrayList<Player>();
 	public static ArrayList<Player> redFlagPlayer = new ArrayList<Player>();
 
+	// 羊毛の設置個数
+	public static HashMap<GameTeam, Integer> alreadyput = new HashMap<>();
+
 	// ゲーム開始から何秒たったか
 	public static int seconds = 0;
 
@@ -256,7 +259,7 @@ public class GameManager {
 						}
 					}
 				} else {
-					reset(false);
+					GameEnd(GameTeam.NONE);
 					cancel();
 				}
 			}
@@ -282,8 +285,7 @@ public class GameManager {
 								+ team.name() + "&6チームの勝利です")));
 			}
 			b(c("&a=============================="));
-			reset(true);
-			nextGamePreparation(); // GameEnd()の6秒後
+			nextGamePreparation();
 		}
 	}
 
@@ -303,14 +305,30 @@ public class GameManager {
 			}
 			b(c("&6結果は ") + sb.toString());
 			b(c("&a=============================="));
-			reset(true);
-			nextGamePreparation();// GameEnd()の6秒後
+			nextGamePreparation();
 		}
 	}
 
+	@SuppressWarnings("deprecation")
 	public static void nextGamePreparation() {
+		ingame = false;
+		nextcountdown = false;
+		isSelectNumber = false;
+		delentities.forEach(e -> {
+			if (!e.isDead())
+				e.remove();
+		});
+		alreadyput.clear();
+		gamenow.clear();
+		CTWRed.getPlayers().forEach(players -> CTWRed.removePlayer(players));
+		CTWBlue.getPlayers().forEach(players -> CTWBlue.removePlayer(players));
+		TDMRed.getPlayers().forEach(players -> TDMRed.removePlayer(players));
+		TDMBlue.getPlayers().forEach(players -> TDMBlue.removePlayer(players));
+		entried.forEach(players -> {
+			players.playSound(players.getLocation(), Sound.FIREWORK_LAUNCH, 1, 0);
+		});
 		new BukkitRunnable() {
-			int count = 0;
+			int count = 12;// TODO
 
 			public void run() {
 				count++;
@@ -320,6 +338,15 @@ public class GameManager {
 					RollBack.load("Arena" + gamenumber + ".yml");
 					SidebarUtils.SidebarUnregist();
 					entried.forEach(players -> {
+						kitInventory(players, false);
+						players.setHealth(20);
+						players.setFoodLevel(20);
+						players.setLevel(0);
+						players.setExp(0);
+						players.setGameMode(GameMode.SURVIVAL);
+						players.getActivePotionEffects()
+								.forEach(potions -> players.removePotionEffect(potions.getType()));
+						players.setBedSpawnLocation(players.getWorld().getSpawnLocation(), true);
 						players.teleport(players.getWorld().getSpawnLocation());
 						KitUtils.kitMenu(players);
 						kitInventory(players, true);
@@ -330,36 +357,6 @@ public class GameManager {
 			}
 
 		}.runTaskTimer(main, 120, 20);
-	}
-
-	@SuppressWarnings("deprecation")
-	private static void reset(boolean fireworks) {
-		ingame = false;
-		nextcountdown = false;
-		isSelectNumber = false;
-		delentities.forEach(e -> {
-			if (!e.isDead())
-				e.remove();
-		});
-		gamenow.clear();
-		SidebarUtils.SidebarUnregist();
-		CTWRed.getPlayers().forEach(players -> CTWRed.removePlayer(players));
-		CTWBlue.getPlayers().forEach(players -> CTWBlue.removePlayer(players));
-		TDMRed.getPlayers().forEach(players -> TDMRed.removePlayer(players));
-		TDMBlue.getPlayers().forEach(players -> TDMBlue.removePlayer(players));
-		entried.forEach(players -> {
-			kitInventory(players, false);
-			players.setHealth(20);
-			players.setFoodLevel(20);
-			players.setLevel(0);
-			players.setExp(0);
-			players.setGameMode(GameMode.SURVIVAL);
-			if (fireworks) {
-				players.playSound(players.getLocation(), Sound.FIREWORK_LAUNCH, 1, 0);
-			}
-			players.getActivePotionEffects().forEach(potions -> players.removePotionEffect(potions.getType()));
-			players.setBedSpawnLocation(players.getWorld().getSpawnLocation(), true);
-		});
 	}
 
 	public static void kitInventory(Player player, boolean bool) {

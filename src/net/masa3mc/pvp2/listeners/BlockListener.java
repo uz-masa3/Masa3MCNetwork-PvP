@@ -8,7 +8,6 @@ import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.Chest;
 import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.craftbukkit.v1_8_R3.command.ServerCommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -28,18 +27,11 @@ import net.masa3mc.pvp2.utils.SidebarUtils;
 
 import static net.masa3mc.pvp2.GameManager.*;
 
-import java.util.List;
 import java.util.UUID;
 
 public class BlockListener implements Listener {
 
 	private final Main main = Main.getInstance();
-
-	// TODO
-	// -TeamBaseの書き方を、範囲を指定したStringListにする(どちらでも)
-	//
-	// -羊毛を設置したときにでる拠点メッセージの削除
-	// -獲得済みObjectの個数を保持・個数に達して勝利の処理(将来的に)
 
 	@SuppressWarnings("deprecation")
 	@EventHandler
@@ -133,10 +125,6 @@ public class BlockListener implements Listener {
 				event.setCancelled(true);
 				return;
 			}
-			if (isEnemyBase(GameTeam.RED, gamenumber, p) || isEnemyBase(GameTeam.BLUE, gamenumber, p)) {
-				player.sendMessage(c("&e拠点&cを編集することはできません。"));
-				event.setCancelled(true);
-			}
 			// CTWの羊毛設置処理
 			if (event.getBlock().getType().equals(Material.WOOL)) {
 				ItemStack item = event.getItemInHand();
@@ -145,40 +133,57 @@ public class BlockListener implements Listener {
 					for (String a : conf.getStringList("Arena" + gamenumber + ".put.red")) {
 						if (a.startsWith(p)) {
 							if (a.endsWith("," + item.getDurability())) {
-								GameEnd(GameTeam.BLUE);
-								UUID uuid = player.getUniqueId();
-								PointUtils.setPoint(uuid, PointUtils.getPoint(uuid) + 1);
-								new BukkitRunnable() {
-									public void run() {
-										event.getBlock().getLocation().getBlock().setType(Material.AIR);
-									}
-								}.runTaskLater(main, 18 * 20);
+								alreadyput.put(GameTeam.BLUE, alreadyput.getOrDefault(GameTeam.BLUE, 1).intValue() + 1);
+								if (alreadyput.getOrDefault(GameTeam.BLUE, 0) == conf
+										.getStringList("Arena" + gamenumber + ".put.red").size()) {
+									GameEnd(GameTeam.BLUE);
+									UUID uuid = player.getUniqueId();
+									PointUtils.setPoint(uuid, PointUtils.getPoint(uuid) + 1);
+									new BukkitRunnable() {
+										public void run() {
+											event.getBlock().getLocation().getBlock().setType(Material.AIR);
+										}
+									}.runTaskLater(main, 18 * 20);
+								} else {
+
+								}
 							} else {
 								player.sendMessage(c("&e-&4その羊毛はここに置けません&e-"));
 								event.setCancelled(true);
 							}
+							return;
 						}
 					}
 				} else if (CTWRed.hasPlayer(player)) {
 					for (String a : conf.getStringList("Arena" + gamenumber + ".put.blue")) {
 						if (a.startsWith(p)) {
 							if (a.endsWith("," + item.getDurability())) {
-								GameEnd(GameTeam.RED);
-								UUID uuid = player.getUniqueId();
-								PointUtils.setPoint(uuid, PointUtils.getPoint(uuid) + 1);
-								new BukkitRunnable() {
-									public void run() {
-										event.getBlock().getLocation().getBlock().setType(Material.AIR);
-									}
-								}.runTaskLater(main, 18 * 20);
-								return;
+								alreadyput.put(GameTeam.RED, alreadyput.getOrDefault(GameTeam.RED, 0).intValue() + 1);
+								if (alreadyput.getOrDefault(GameTeam.RED, 0) == conf
+										.getStringList("Arena" + gamenumber + ".put.blue").size()) {
+									GameEnd(GameTeam.RED);
+									UUID uuid = player.getUniqueId();
+									PointUtils.setPoint(uuid, PointUtils.getPoint(uuid) + 1);
+									new BukkitRunnable() {
+										public void run() {
+											event.getBlock().getLocation().getBlock().setType(Material.AIR);
+										}
+									}.runTaskLater(main, 18 * 20);
+								} else {
+
+								}
 							} else {
 								player.sendMessage(c("&e-&4その羊毛はここに置けません&e-"));
 								event.setCancelled(true);
 							}
+							return;
 						}
 					}
 				}
+			}
+			if (isEnemyBase(GameTeam.RED, gamenumber, p) || isEnemyBase(GameTeam.BLUE, gamenumber, p)) {
+				player.sendMessage(c("&e拠点&cを編集することはできません。"));
+				event.setCancelled(true);
 			}
 		} else {
 			if (!player.isOp()) {
