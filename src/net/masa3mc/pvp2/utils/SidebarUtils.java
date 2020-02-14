@@ -23,16 +23,14 @@ public class SidebarUtils {
 		if (GameManager.ingame) {
 			if (GameManager.game.equals(GameManager.GameType.CTW)) {
 				obj.setDisplayName(c("&6CTW"));
-				obj.getScore(c("&9青チーム&6□")).setScore(1);
-				obj.getScore(c("&c赤チーム&6□")).setScore(1);
-				// set 0
-				obj.getScore(c("&9青チーム&6□")).setScore(0);
-				obj.getScore(c("&c赤チーム&6□")).setScore(0);
+				obj.getScore(c("&9青チーム&6×")).setScore(1);
+				obj.getScore(c("&c赤チーム&6×")).setScore(1);
+				obj.getScore(c("&9青チーム&6×")).setScore(0);
+				obj.getScore(c("&c赤チーム&6×")).setScore(0);
 			} else if (GameManager.game.equals(GameManager.GameType.TDM)) {
 				obj.setDisplayName(c("&6TDM"));
 				obj.getScore(c("&9青チーム")).setScore(1);
 				obj.getScore(c("&c赤チーム")).setScore(1);
-				// set 0
 				obj.getScore(c("&9青チーム")).setScore(0);
 				obj.getScore(c("&c赤チーム")).setScore(0);
 			}
@@ -59,48 +57,31 @@ public class SidebarUtils {
 		});
 	}
 
-	public static void SidebarFlag(String team, int a123) {
-		// 1-初期化
-		// 2-所持
-		// 3-設置済
+	public static void SidebarFlag(String team, boolean flag) {
 		if (GameManager.ingame && team.equalsIgnoreCase("red")) {
 			Bukkit.getOnlinePlayers().forEach(players -> {
 				Objective obj = players.getScoreboard().getObjective("SidebarStatus");
-				if (a123 == 1) {
-					obj.getScoreboard().resetScores(c("&c赤チーム&6▧"));
-					obj.getScoreboard().resetScores(c("&c赤チーム&6■"));
-					obj.getScore(c("&c赤チーム&6□")).setScore(1);
-					obj.getScore(c("&c赤チーム&6□")).setScore(0);
-				} else if (a123 == 2) {
-					obj.getScoreboard().resetScores(c("&c赤チーム&6□"));
-					obj.getScoreboard().resetScores(c("&c赤チーム&6■"));
-					obj.getScore(c("&c赤チーム&6▧")).setScore(1);
-					obj.getScore(c("&c赤チーム&6▧")).setScore(0);
-				} else if (a123 == 3) {
-					obj.getScoreboard().resetScores(c("&c赤チーム&6□"));
-					obj.getScoreboard().resetScores(c("&c赤チーム&6▧"));
-					obj.getScore(c("&c赤チーム&6■")).setScore(1);
-					obj.getScore(c("&c赤チーム&6■")).setScore(0);
+				if (flag) {
+					obj.getScoreboard().resetScores(c("&c赤チーム&6×"));
+					obj.getScore(c("&c赤チーム&6○")).setScore(1);
+					obj.getScore(c("&c赤チーム&6○")).setScore(0);
+				} else {
+					obj.getScoreboard().resetScores(c("&c赤チーム&6○"));
+					obj.getScore(c("&c赤チーム&6×")).setScore(1);
+					obj.getScore(c("&c赤チーム&6×")).setScore(0);
 				}
 			});
 		} else if (GameManager.ingame && team.equalsIgnoreCase("blue")) {
 			Bukkit.getOnlinePlayers().forEach(players -> {
 				Objective obj = players.getScoreboard().getObjective("SidebarStatus");
-				if (a123 == 1) {
-					obj.getScoreboard().resetScores(c("&9青チーム&6▧"));
-					obj.getScoreboard().resetScores(c("&9青チーム&6■"));
-					obj.getScore(c("&9青チーム&6□")).setScore(1);
-					obj.getScore(c("&9青チーム&6□")).setScore(0);
-				} else if (a123 == 2) {
-					obj.getScoreboard().resetScores(c("&9青チーム&6□"));
-					obj.getScoreboard().resetScores(c("&9青チーム&6■"));
-					obj.getScore(c("&9青チーム&6▧")).setScore(1);
-					obj.getScore(c("&9青チーム&6▧")).setScore(0);
-				} else if (a123 == 3) {
-					obj.getScoreboard().resetScores(c("&9青チーム&6□"));
-					obj.getScoreboard().resetScores(c("&9青チーム&6▧"));
-					obj.getScore(c("&9青チーム&6■")).setScore(1);
-					obj.getScore(c("&9青チーム&6■")).setScore(0);
+				if (flag) {
+					obj.getScoreboard().resetScores(c("&9青チーム&6×"));
+					obj.getScore(c("&9青チーム&6○")).setScore(1);
+					obj.getScore(c("&9青チーム&6○")).setScore(0);
+				} else {
+					obj.getScoreboard().resetScores(c("&9青チーム&6○"));
+					obj.getScore(c("&9青チーム&6×")).setScore(1);
+					obj.getScore(c("&9青チーム&6×")).setScore(0);
 				}
 			});
 		}

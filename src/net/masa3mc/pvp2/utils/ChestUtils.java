@@ -20,11 +20,7 @@ public class ChestUtils {
 
 	public static void restoreAllChests() {
 		YamlConfiguration yml = YamlConfiguration.loadConfiguration(new File(main.getDataFolder() + "/chests.yml"));
-		List<String> list = yml.getStringList("locations");
-		if (list == null || list.isEmpty()) {
-			return;
-		}
-		list.forEach(loc -> {
+		yml.getStringList("locations").forEach(loc -> {
 			String[] split = loc.split(",");
 			World w = Bukkit.getWorld(split[0]);
 			int x = Integer.parseInt(split[1]);

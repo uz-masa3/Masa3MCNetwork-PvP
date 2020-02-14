@@ -1,8 +1,5 @@
 package net.masa3mc.pvp2;
 
-import java.io.File;
-import java.io.IOException;
-
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.RegisteredServiceProvider;
@@ -11,10 +8,11 @@ import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
 
 import net.masa3mc.pvp2.cmds.Game;
-import net.masa3mc.pvp2.cmds.Kit;
+import net.masa3mc.pvp2.cmds.KitMenu;
+import net.masa3mc.pvp2.cmds.LoadKit;
 import net.masa3mc.pvp2.cmds.Point;
+import net.masa3mc.pvp2.cmds.SetKit;
 import net.masa3mc.pvp2.cmds.Setting;
-import net.masa3mc.pvp2.listeners.BlockListener;
 import net.masa3mc.pvp2.listeners.CTWListener;
 import net.masa3mc.pvp2.listeners.MainListener;
 import net.masa3mc.pvp2.listeners.SWListener;
@@ -30,16 +28,16 @@ public class Main extends JavaPlugin {
 	public void onEnable() {
 		main = this;
 		saveDefaultConfig();
-		makefile();
 		PluginManager pm = Bukkit.getPluginManager();
-		pm.registerEvents(new BlockListener(), this);
 		pm.registerEvents(new MainListener(this), this);
-		pm.registerEvents(new CTWListener(), this);
+		pm.registerEvents(new CTWListener(this), this);
 		pm.registerEvents(new TDMListener(), this);
 		pm.registerEvents(new SWListener(this), this);
 
 		getCommand("game").setExecutor(new Game());
-		getCommand("kit").setExecutor(new Kit());
+		getCommand("kitmenu").setExecutor(new KitMenu());
+		getCommand("loadkit").setExecutor(new LoadKit());
+		getCommand("setkit").setExecutor(new SetKit());
 		getCommand("point").setExecutor(new Point());
 		getCommand("setting").setExecutor(new Setting());
 
@@ -67,7 +65,6 @@ public class Main extends JavaPlugin {
 			GameManager.kitInventory(players, true);
 		});
 		setupEconomy();
-		getLogger().info("ReloadData: " + RollBack.loadData());
 	}
 
 	@SuppressWarnings("deprecation")
@@ -115,28 +112,7 @@ public class Main extends JavaPlugin {
 		return Bukkit.getScoreboardManager().getMainScoreboard().getTeam(team);
 	}
 
-	private void makefile() {
-		File dir = getDataFolder();
-		makefile(new File(dir, "chests.yml"), false);
-		makefile(new File(dir, "bases.yml"), false);
-		makefile(new File(dir, "rollback"), true);
-		makefile(new File(dir, "gui"), true);
-		makefile(new File(dir, "kit"), true);
-		makefile(new File(dir, "kit/player-data"), true);
-	}
-
-	private void makefile(File file, boolean isDirectory) {
-		if (!file.exists()) {
-			try {
-				if (isDirectory) {
-					file.mkdirs();
-				} else {
-					file.createNewFile();
-				}
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-		}
-	}
+	// TODO
+	// Skywarsの追加
 
 }

@@ -48,9 +48,6 @@ public class GameManager {
 	public static ArrayList<Player> blueFlagPlayer = new ArrayList<Player>();
 	public static ArrayList<Player> redFlagPlayer = new ArrayList<Player>();
 
-	// 羊毛の設置個数
-	public static HashMap<GameTeam, Integer> alreadyput = new HashMap<>();
-
 	// ゲーム開始から何秒たったか
 	public static int seconds = 0;
 
@@ -71,7 +68,7 @@ public class GameManager {
 
 	public static boolean nextcountdown = false;
 
-	private static final int min_players = 1; // TODO
+	private static final int min_players = 2;
 
 	public static void addPlayer(Player player) {
 		entried.add(player);
@@ -105,7 +102,7 @@ public class GameManager {
 					int count = 0;
 
 					public void run() {
-						int sec = 1;// TODO
+						int sec = 16;
 						if (entried.size() >= min_players) {
 							count++;
 							if (count >= sec) {
@@ -197,7 +194,6 @@ public class GameManager {
 		ingame = true;
 		game = GameType.valueOf(main.getConfig().getString("Arena" + gamenumber + ".Type"));
 		FileConfiguration f = main.getConfig();
-		RollBack.load("Arena" + gamenumber + ".yml");
 		ChestUtils.restoreAllChests();
 		canbreaks = YamlConfiguration.loadConfiguration(new File(main.getDataFolder() + "/canbreaks.yml"));
 		bases = YamlConfiguration.loadConfiguration(new File(main.getDataFolder() + "/bases.yml"));
@@ -259,7 +255,7 @@ public class GameManager {
 						}
 					}
 				} else {
-					GameEnd(GameTeam.NONE);
+					reset(false);
 					cancel();
 				}
 			}
@@ -285,7 +281,8 @@ public class GameManager {
 								+ team.name() + "&6チームの勝利です")));
 			}
 			b(c("&a=============================="));
-			nextGamePreparation();
+			reset(true);
+			nextGamePreparation(); // GameEnd()の6秒後
 		}
 	}
 
@@ -305,48 +302,22 @@ public class GameManager {
 			}
 			b(c("&6結果は ") + sb.toString());
 			b(c("&a=============================="));
-			nextGamePreparation();
+			reset(true);
+			nextGamePreparation();// GameEnd()の6秒後
 		}
 	}
 
-	@SuppressWarnings("deprecation")
 	public static void nextGamePreparation() {
-		ingame = false;
-		nextcountdown = false;
-		isSelectNumber = false;
-		delentities.forEach(e -> {
-			if (!e.isDead())
-				e.remove();
-		});
-		alreadyput.clear();
-		gamenow.clear();
-		CTWRed.getPlayers().forEach(players -> CTWRed.removePlayer(players));
-		CTWBlue.getPlayers().forEach(players -> CTWBlue.removePlayer(players));
-		TDMRed.getPlayers().forEach(players -> TDMRed.removePlayer(players));
-		TDMBlue.getPlayers().forEach(players -> TDMBlue.removePlayer(players));
-		entried.forEach(players -> {
-			players.playSound(players.getLocation(), Sound.FIREWORK_LAUNCH, 1, 0);
-		});
 		new BukkitRunnable() {
-			int count = 12;// TODO
+			int count = 0;
 
 			public void run() {
 				count++;
 				if (count != 16 && (16 - count <= 10)) {
 					b(c("&7次のゲーム準備まで残り&6" + (16 - count) + "&7秒"));
 				} else if (count >= 16) {
-					RollBack.load("Arena" + gamenumber + ".yml");
 					SidebarUtils.SidebarUnregist();
 					entried.forEach(players -> {
-						kitInventory(players, false);
-						players.setHealth(20);
-						players.setFoodLevel(20);
-						players.setLevel(0);
-						players.setExp(0);
-						players.setGameMode(GameMode.SURVIVAL);
-						players.getActivePotionEffects()
-								.forEach(potions -> players.removePotionEffect(potions.getType()));
-						players.setBedSpawnLocation(players.getWorld().getSpawnLocation(), true);
 						players.teleport(players.getWorld().getSpawnLocation());
 						KitUtils.kitMenu(players);
 						kitInventory(players, true);
@@ -357,6 +328,36 @@ public class GameManager {
 			}
 
 		}.runTaskTimer(main, 120, 20);
+	}
+
+	@SuppressWarnings("deprecation")
+	private static void reset(boolean fireworks) {
+		ingame = false;
+		nextcountdown = false;
+		isSelectNumber = false;
+		delentities.forEach(e -> {
+			if (!e.isDead())
+				e.remove();
+		});
+		gamenow.clear();
+		SidebarUtils.SidebarUnregist();
+		CTWRed.getPlayers().forEach(players -> CTWRed.removePlayer(players));
+		CTWBlue.getPlayers().forEach(players -> CTWBlue.removePlayer(players));
+		TDMRed.getPlayers().forEach(players -> TDMRed.removePlayer(players));
+		TDMBlue.getPlayers().forEach(players -> TDMBlue.removePlayer(players));
+		entried.forEach(players -> {
+			kitInventory(players, false);
+			players.setHealth(20);
+			players.setFoodLevel(20);
+			players.setLevel(0);
+			players.setExp(0);
+			players.setGameMode(GameMode.SURVIVAL);
+			if (fireworks) {
+				players.playSound(players.getLocation(), Sound.FIREWORK_LAUNCH, 1, 0);
+			}
+			players.getActivePotionEffects().forEach(potions -> players.removePotionEffect(potions.getType()));
+			players.setBedSpawnLocation(players.getWorld().getSpawnLocation(), true);
+		});
 	}
 
 	public static void kitInventory(Player player, boolean bool) {
@@ -415,15 +416,6 @@ public class GameManager {
 		} else if (type.equals(GameType.SW)) {
 
 		}
-	}
-
-	public static boolean isEnemyBase(GameTeam team, int gamenum, String w, int x, int y, int z) {
-		return isEnemyBase(team, gamenum, w + "," + x + "," + y + "," + z);
-	}
-
-	public static boolean isEnemyBase(GameTeam team, int gamenum, String l) {
-		List<String> base = bases.getStringList("Arena" + gamenum + ".base." + team.name().toLowerCase());
-		return base.contains(l);
 	}
 
 	public static Location getSpawnLocation(int arena, String name) {

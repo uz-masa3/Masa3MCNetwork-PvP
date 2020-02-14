@@ -3,13 +3,17 @@ package net.masa3mc.pvp2.listeners;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.Effect;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
+import org.bukkit.block.Block;
+import org.bukkit.block.Chest;
 import org.bukkit.block.Sign;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Entity;
@@ -18,6 +22,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.SignChangeEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.FoodLevelChangeEvent;
@@ -26,6 +31,7 @@ import org.bukkit.event.entity.ProjectileHitEvent;
 import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
 import org.bukkit.event.entity.EntitySpawnEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.player.PlayerBucketFillEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
@@ -39,6 +45,7 @@ import org.bukkit.scheduler.BukkitRunnable;
 import net.masa3mc.pvp2.GameManager;
 import net.masa3mc.pvp2.Main;
 import net.masa3mc.pvp2.GameManager.GameType;
+import net.masa3mc.pvp2.utils.ChestUtils;
 import net.masa3mc.pvp2.utils.KitUtils;
 import net.masa3mc.pvp2.utils.PlayerUtils;
 import net.masa3mc.pvp2.utils.PointUtils;
@@ -49,10 +56,107 @@ import static net.masa3mc.pvp2.GameManager.*;
 public class MainListener implements Listener {
 
 	private List<String> inbase = new ArrayList<String>();
+	private HashMap<Player, Long> fastclick = new HashMap<Player, Long>();
 	private Main main = null;
 
 	public MainListener(Main main) {
 		this.main = main;
+	}
+
+	@EventHandler
+	public void fastclick(PlayerInteractEvent event) {
+		if (!event.getAction().name().contains("RIGHT") && ingame) {
+			Player player = event.getPlayer();
+			long time = System.currentTimeMillis();
+			long culc = time - fastclick.getOrDefault(player, 100l);
+			fastclick.put(player, time);
+			if (culc < 50) {// 40ms(0.04s)未満
+				Bukkit.getLogger().warning("Click cancelled: " + player.getName() + " " + culc + "ms(less than 40ms)");
+				event.setCancelled(true);
+			}
+		}
+	}
+
+	@SuppressWarnings("deprecation")
+	@EventHandler
+	public void bbreak(BlockBreakEvent event) {
+		Player player = event.getPlayer();
+
+		Location loc = event.getBlock().getLocation();
+		String w = loc.getWorld().getName();
+		int x = loc.getBlockX();
+		int y = loc.getBlockY();
+		int z = loc.getBlockZ();
+		Block b = event.getBlock();
+		if (ingame) {
+			event.setCancelled(true);
+			String pos = w + "," + x + "," + y + "," + z;
+			int ticks = canbreaks.getInt("Arena" + gamenumber + ".canbreaks." + pos);
+			if (ticks > 0) {
+				if (!breaking.containsKey(loc)) {
+					player.getInventory().addItem(new ItemStack(b.getType()));
+					player.updateInventory();
+					breaking.put(loc, b.getType());
+					if (ticks >= 20) {
+						new BukkitRunnable() {
+							public void run() {
+								loc.getWorld().playEffect(loc, Effect.STEP_SOUND, Material.OBSIDIAN.getId());
+								loc.getWorld().playSound(loc, Sound.DIG_STONE, 1, 1);
+								b.setType(Material.OBSIDIAN);
+								cancel();
+							}
+						}.runTaskLater(main, 3);
+					}
+					new BukkitRunnable() {
+						public void run() {
+							b.setType(breaking.get(loc));
+							loc.getWorld().playEffect(loc, Effect.STEP_SOUND, b.getTypeId());
+							loc.getWorld().playSound(loc, Sound.DIG_STONE, 1, 1);
+							breaking.remove(loc);
+							cancel();
+						}
+					}.runTaskLater(main, ticks);
+				} else {
+					player.sendMessage(c("&c再設置されるまでお待ちください"));
+				}
+			} else {
+				player.sendMessage(c("&cそこは壊せません"));
+			}
+		} else {
+			if (player.isOp() && player.getGameMode().equals(GameMode.CREATIVE)) {
+				if (player.getItemInHand() == null) {
+					return;
+				}
+				if (player.getItemInHand().getType().equals(Material.ARROW)) {
+					Block block = event.getBlock();
+					event.setCancelled(true);
+					if (block.getType().equals(Material.CHEST)) {
+						if (ChestUtils.saveChest((Chest) block.getState())) {
+							player.sendMessage(c("&6チェストの登録が正常に完了しました"));
+						} else {
+							player.sendMessage(c("&cチェストの登録中にエラーが発生しました"));
+						}
+					} else {
+						player.sendMessage(c("&cチェスト以外は登録できません"));
+					}
+				}
+			} else {
+				event.setCancelled(true);
+			}
+		}
+	}
+
+	@EventHandler
+	public void bucketfill(PlayerBucketFillEvent event) {
+		event.setCancelled(true);
+		Block b = event.getBlockClicked();
+		if (b != null) {
+			if (b.getType().equals(Material.WATER)) {
+				event.getPlayer().sendMessage(c("&c水を汲むことはできません"));
+			} else if (b.getType().equals(Material.LAVA)) {
+				event.getPlayer().sendMessage(c("&c溶岩を汲むことはできません"));
+			}
+		}
 	}
 
 	@SuppressWarnings("deprecation")
@@ -160,14 +264,11 @@ public class MainListener implements Listener {
 		if (event.getClickedBlock() != null) {
 			Material type = event.getClickedBlock().getType();
 			if (type.equals(Material.CHEST) || type.equals(Material.FURNACE)) {
-				if (ingame) {
-					Location l = event.getClickedBlock().getLocation();
-					String pos = l.getWorld().getName() + "," + l.getBlockX() + "," + l.getBlockY() + ","
-							+ l.getBlockZ();
-					if (chests.getString(pos) == null) {
-						player.sendMessage(c("&cその" + (type.name().equals("CHEST") ? "チェスト" : "かまど") + "は開けれません"));
-						event.setCancelled(true);
-					}
+				Location l = event.getClickedBlock().getLocation();
+				String pos = l.getWorld().getName() + "," + l.getBlockX() + "," + l.getBlockY() + "," + l.getBlockZ();
+				if (chests.getString(pos) == null) {
+					player.sendMessage(c("&cその" + (type.name().equals("CHEST") ? "チェスト" : "かまど") + "は開けれません"));
+					event.setCancelled(true);
 				}
 			} else if (type.equals(Material.WALL_SIGN) || type.equals(Material.SIGN_POST)) {
 				Sign sign = (Sign) event.getClickedBlock().getState();
@@ -317,9 +418,10 @@ public class MainListener implements Listener {
 		Player player = event.getPlayer();
 		if (ingame) {
 			Location l = player.getLocation();
+			String pos = l.getWorld().getName() + "," + l.getBlockX() + "," + l.getBlockY() + "," + l.getBlockZ();
 			if (CTWRed.hasPlayer(player) || TDMRed.hasPlayer(player)) {
-				if (isEnemyBase(GameTeam.BLUE, gamenumber, l.getWorld().getName(), l.getBlockX(), l.getBlockY(),
-						l.getBlockZ())) {
+				List<String> bluebase = bases.getStringList("Arena" + gamenumber + ".base.blue");
+				if (bluebase.contains(pos)) {
 					player.teleport(l);
 					if (!inbase.contains(player.getName())) {
 						inbase.add(player.getName());
@@ -329,8 +431,8 @@ public class MainListener implements Listener {
 					inbase.remove(player.getName());
 				}
 			} else if (CTWBlue.hasPlayer(player) || TDMBlue.hasPlayer(player)) {
-				if (isEnemyBase(GameTeam.RED, gamenumber, l.getWorld().getName(), l.getBlockX(), l.getBlockY(),
-						l.getBlockZ())) {
+				List<String> redbase = bases.getStringList("Arena" + gamenumber + ".base.red");
+				if (redbase.contains(pos)) {
 					player.teleport(l);
 					if (!inbase.contains(player.getName())) {
 						inbase.add(player.getName());
@@ -354,18 +456,17 @@ public class MainListener implements Listener {
 					kill.getInventory().addItem(new ItemStack(Material.valueOf(m)));
 				}
 			}
-			// if (kill != p) {
-			// new Thread() {
-			// public void run() {
-			// EconomyResponse er = Main.getEconomy().depositPlayer(p.getKiller(), 30.0);
-			// if (er.transactionSuccess()) {
-			// PlayerUtils.sendActionBarMessage(p.getKiller(), c("&a30Msを手に入れた"));
-			// }
-			// PointUtils.setPoint(kill.getUniqueId(),
-			// PointUtils.getPoint(kill.getUniqueId()) + 1);
-			// }
-			// }.start();
-			// }
+			if (kill != p) {
+				new Thread() {
+					public void run() {
+						EconomyResponse er = Main.getEconomy().depositPlayer(p.getKiller(), 30.0);
+						if (er.transactionSuccess()) {
+							PlayerUtils.sendActionBarMessage(p.getKiller(), c("&a30Msを手に入れた"));
+						}
+						PointUtils.setPoint(kill.getUniqueId(), PointUtils.getPoint(kill.getUniqueId()) + 1);
+					}
+				}.start();
+			}
 			event.setDeathMessage(c("&7" + p.getName() + "は" + kill.getName() + "に殺害された"));
 		} else if (cause.equals(DamageCause.VOID)) {
 			event.setDeathMessage(c("&7" + p.getName() + "は奈落に落ちた"));
@@ -378,27 +479,26 @@ public class MainListener implements Listener {
 		} else if (cause.equals(DamageCause.POISON)) {
 			event.setDeathMessage(c("&7" + p.getName() + "は毒にまみれた"));
 		}
-		// new Thread() {
-		// public void run() {
-		// TODO
-		// EconomyResponse er = Main.getEconomy().depositPlayer(p, -15.0);
-		// if (er.transactionSuccess()) {
-		// PlayerUtils.sendActionBarMessage(p, c("&c15Msを失った"));
-		// }
-		// }
-		// }.start();
+		new Thread() {
+			public void run() {
+				EconomyResponse er = Main.getEconomy().depositPlayer(p, -15.0);
+				if (er.transactionSuccess()) {
+					PlayerUtils.sendActionBarMessage(p, c("&c15Msを失った"));
+				}
+			}
+		}.start();
 		if (redFlagPlayer.contains(p)) {
 			b(c("&7" + p.getName() + "が&c赤チーム&7の羊毛を落としました"));
 			redFlagPlayer.remove(p);
 			if (redFlagPlayer.size() == 0) {
-				SidebarUtils.SidebarFlag("blue", 1);
+				SidebarUtils.SidebarFlag("blue", false);
 			}
 		}
 		if (blueFlagPlayer.contains(p)) {
 			b(c("&7" + p.getName() + "が&9青チーム&7の羊毛を落としました"));
 			blueFlagPlayer.remove(p);
 			if (blueFlagPlayer.size() == 0) {
-				SidebarUtils.SidebarFlag("red", 1);
+				SidebarUtils.SidebarFlag("red", false);
 			}
 		}
 		new BukkitRunnable() {
